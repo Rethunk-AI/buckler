@@ -11,10 +11,11 @@ from __future__ import annotations
 import logging
 import re
 import shlex
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from buckler import POLICY_IO_VERSION
+from buckler import POLICY_IO_VERSION, POLICY_TRIGGERS, paths
 from buckler.pack_loader import load_config, load_packs
 
 log = logging.getLogger(__name__)
@@ -34,6 +35,43 @@ _SEGMENT_BOUNDARY = re.compile(r"\s*(?:&&|\|\||;)\s*")
 
 class PolicyError(Exception):
     pass
+
+
+def _validate_policy_input(policy_input: dict[str, Any]) -> None:
+    ver = policy_input.get("policy_io_version")
+    if ver != POLICY_IO_VERSION:
+        raise PolicyError(
+            f"Unsupported policy_io_version: expected {POLICY_IO_VERSION!r}, got {ver!r}"
+        )
+    trig = policy_input.get("trigger", "")
+    if trig not in POLICY_TRIGGERS:
+        raise PolicyError(f"Unsupported trigger: {trig!r}")
+
+
+def _write_audit_decision(
+    cfg: dict[str, Any],
+    policy_input: dict[str, Any],
+    best_rule: dict[str, Any] | None,
+    output: dict[str, Any],
+) -> None:
+    if not cfg.get("core", {}).get("audit_log"):
+        return
+    shell = policy_input.get("shell") or {}
+    cmd = shell.get("command", "") if isinstance(shell, dict) else ""
+    rule_id = best_rule["id"] if best_rule else ""
+    pack_id = best_rule["pack"] if best_rule else ""
+    ts = datetime.now(UTC).isoformat()
+    line = (
+        f"{ts}\ttrigger={policy_input.get('trigger', '')}\t"
+        f"decision={output.get('decision', '')}\trule={rule_id}\tpack={pack_id}\tcommand={cmd!r}"
+    )
+    log_path = paths.audit_log()
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError as e:
+        log.warning("Audit log write failed: %s", e)
 
 
 def _segment_command(command: str) -> list[str]:
@@ -236,6 +274,7 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
     pack_loader and returns a harness-neutral PolicyOutput dict.
     """
     cfg = load_config()
+    _validate_policy_input(policy_input)
     tier = cfg["core"].get("tier", "baseline")
     rules = load_packs(tier=tier)
 
@@ -270,7 +309,7 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
             best_rule = rule
 
     if best_rule is None:
-        return {
+        out: dict[str, Any] = {
             "policy_io_version": POLICY_IO_VERSION,
             "decision": "allow",
             "user_message": None,
@@ -278,11 +317,13 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
             "additional_context": None,
             "updated_tool_input": None,
         }
+        _write_audit_decision(cfg, policy_input, None, out)
+        return out
 
     template_ctx["pack"] = best_rule["pack"]
     template_ctx["rule"] = best_rule["id"]
 
-    return {
+    out = {
         "policy_io_version": POLICY_IO_VERSION,
         "decision": best_rule["action"],
         "user_message": _apply_template(best_rule.get("user_message"), template_ctx),
@@ -290,3 +331,5 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
         "additional_context": _apply_template(best_rule.get("additional_context"), template_ctx),
         "updated_tool_input": None,
     }
+    _write_audit_decision(cfg, policy_input, best_rule, out)
+    return out

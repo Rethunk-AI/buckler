@@ -7,3 +7,14 @@ and decides whether to allow, deny, ask, or nudge the action.
 
 __version__ = "0.1.0"
 POLICY_IO_VERSION = "1"
+
+# Abstract trigger kinds for PolicyInput (must match policy-io schema + pack_loader).
+POLICY_TRIGGERS = frozenset(
+    {
+        "pre_shell_tool",
+        "pre_shell_exec",
+        "post_tool_success",
+        "post_tool_failure",
+        "unknown_harness_event",
+    }
+)
