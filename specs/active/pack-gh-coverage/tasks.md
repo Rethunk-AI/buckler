@@ -1,5 +1,7 @@
 # Tasks — pack-gh-coverage
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Ratify Q1–Q5 (extend vs rename, DELETE tier, identity subcommands, `--delete-branch` match, archive skip).
@@ -12,7 +14,7 @@
 - [ ] Maintain 100% coverage (A7).
 - [ ] Ratify Q-table (A8).
 
-## P-1
+## P1
 
 - [ ] Add evaluate smoke examples to contributor docs or spec appendix if helpful.
 

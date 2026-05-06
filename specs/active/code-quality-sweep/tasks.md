@@ -1,5 +1,7 @@
 # Tasks — code-quality-sweep
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Ratify Q1 (delete vs rewrite misnamed test), Q2 (audit log doc vs lock), Q3 (README badge), Q4 (version/CHANGELOG), Q5 (`TypedDict` style), Q6 (`workspace_roots` order).
@@ -18,7 +20,7 @@
 - [ ] Land as one PR with one commit per item (or paired where sensible) (A13).
 - [ ] Q-table ratified in spec (A14).
 
-## P-1
+## P1
 
 - [ ] Spot-check each commit message follows conventional commits and explains “why” where non-obvious.
 

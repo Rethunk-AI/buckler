@@ -1,5 +1,7 @@
 # Tasks — hooks-cross-platform-quoting
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Ratify Q1–Q4 (Windows list2cmdline, bare `-m` tail, fallback quoting, newline handling).
@@ -10,7 +12,7 @@
 - [ ] Maintain 100% coverage (A7).
 - [ ] Ratify Q-table (A8).
 
-## P-1
+## P1
 
 - [ ] Add brief comment in `hooks.py` pointing to docs for maintainers.
 

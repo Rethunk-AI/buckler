@@ -1,5 +1,7 @@
 # Tasks — legacy-deprecation-window
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Answer Q1: was `rethunk-mcp-nudge.py` shipped to external users?
@@ -10,7 +12,7 @@
 - [ ] Add `greenfield-scrub --fail-on HIGH` to CI or explicitly defer with documented rationale per Q5 (A6).
 - [ ] Ratify Q-table (A7).
 
-## P-1
+## P1
 
 - [ ] Search repo for stray `rethunk-mcp-nudge` references outside intentional docs.
 - [ ] If deprecation path: communicate operator-facing timeline in `HUMANS.md` / `CHANGELOG` consistently.

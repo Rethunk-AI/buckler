@@ -1,5 +1,7 @@
 # Tasks — parser-bypass-hardening
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Ratify Q1–Q5 (parse-failure default, `commit-graph` alignment, env prefix, depth=3, pipe deny semantics).
@@ -13,7 +15,7 @@
 - [ ] Run `python -m buckler evaluate` smoke on carry-forward examples (A8).
 - [ ] Ratify Q-table (A9).
 
-## P-1
+## P1
 
 - [ ] Document recursion bound and failure behavior in `ARCHITECTURE.md` or `docs/rule-schema.md` if maintainers need a single pointer.
 

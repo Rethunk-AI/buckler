@@ -1,5 +1,7 @@
 # Tasks — docs-and-runbooks
 
+Status: DRAFT 060431ZMAY26
+
 ## P0
 
 - [ ] [HUMAN] Ratify Q1–Q5 (paths, rotation ownership, SIEM example depth, defer debug env, skill cross-link timing).
@@ -12,7 +14,7 @@
 - [ ] Confirm `doc-audit` / governance clean — no new README install drift (A7).
 - [ ] Ratify Q-table in spec (A8).
 
-## P-1
+## P1
 
 - [ ] Second-pass consistency read with `SECURITY.md` threat table wording.
 
