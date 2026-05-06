@@ -6,7 +6,7 @@ Buckler protects against **unintended agentic shell actions**. Its threat model 
 
 | Threat | Mitigation |
 |--------|-----------|
-| Agent runs `git commit` unilaterally | `agent-git` pack denies by default |
+| Agent runs destructive `gh` commands (`repo delete`, `api` DELETE, …) | `agent-gh` pack denies baseline destructive subcommands |
 | Agent force-pushes or deletes remote branches | Deny rules on `--force`, `-f`, `--delete`, `--mirror`, `:branch` push |
 | Agent removes or rewrites a remote | Deny rules on `git remote remove`, configurable on `set-url` |
 | Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; see [Known parser bypasses (status)](#known-parser-bypasses-status) (not all shell-escape families are closed yet) |

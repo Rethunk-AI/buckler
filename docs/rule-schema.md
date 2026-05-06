@@ -47,6 +47,7 @@ match:
       flags_any: []           # (optional) at least one of these flags present
       flags_all: []           # (optional) all of these flags must be present
       refspec_delete: false   # (optional) when true, segment must be git push with ':ref' delete refspec
+      gh_api_delete: false     # (optional) when true, segment must be `gh api` with `-X DELETE` or `--method DELETE`
 
   # Matches on the tool name (for pre_shell_tool / post_tool_* triggers)
   tool_name: Shell            # exact string match
@@ -62,7 +63,7 @@ Buckler segments shell commands on `&&`, `||`, and `;` (respecting quoting), the
 
 Multiple entries in `shell_segments` are OR-ed (any segment matching any entry fires the rule).
 
-When `refspec_delete` is `true`, the segment must be a `git push` that includes an implicit-delete refspec (a token starting with `:` that is not `::`).
+When `gh_api_delete` is `true`, the segment must also match `program: gh` and `subcommand: api`, and the token stream must contain `-X DELETE` or `--method DELETE` (case-insensitive on the method word).
 
 ### `env` matching
 

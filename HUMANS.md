@@ -101,8 +101,9 @@ Packs are YAML files that define policy rules. Buckler discovers packs in this o
 | Pack | File | Enabled |
 |------|------|---------|
 | `agent-git` | `packs/agent-git.yaml` | Yes |
+| `agent-gh` | `packs/agent-gh.yaml` | Yes |
 
-To disable a builtin pack, add a user rule file with `pack_override: { agent-git: { enabled: false } }` (see [docs/rule-schema.md](docs/rule-schema.md)).
+To disable a builtin pack, add a user rule file with `pack_override: { agent-git: { enabled: false } }` or `agent-gh: { enabled: false }` (see [docs/rule-schema.md](docs/rule-schema.md)).
 
 ### Writing user rules
 
@@ -169,6 +170,7 @@ audit_log = false
 [packs]
 # Disable a builtin pack
 # agent-git = { enabled = false }
+# agent-gh = { enabled = false }
 ```
 
 ---

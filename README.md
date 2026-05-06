@@ -13,13 +13,13 @@
 
 ## Summary
 
-Buckler is a **harness-neutral** policy engine: declarative YAML rules evaluate normalized signals from any AI coding assistant and decide whether to **allow**, **deny**, **ask**, or **nudge**—independent of which harness fired the hook. The `agent-git` pack ships enabled by default, blocking uncontrolled commits, force-pushes, and remote destruction out of the box.
+Buckler is a **harness-neutral** policy engine: declarative YAML rules evaluate normalized signals from any AI coding assistant and decide whether to **allow**, **deny**, **ask**, or **nudge**—independent of which harness fired the hook. The `agent-git` and `agent-gh` packs ship enabled by default, blocking uncontrolled `git` commits, force-pushes, remote destruction, and destructive `gh` commands out of the box.
 
 ## Feature Highlights
 
 - **Harness-neutral core** — the evaluator knows nothing about Cursor's `hooks.json`; only thin adapters do
 - **Declarative YAML packs** — rules match on abstract trigger kinds, not harness-specific strings
-- **`agent-git` pack included** — deny uncontrolled commits / force-push / remote destruction; nudge toward MCP tools
+- **`agent-git` + `agent-gh` packs** — deny uncontrolled git commits / force-push / remote destruction; deny destructive `gh` subcommands; nudge toward MCP tools
 - **Cosign-signed releases** — every release tarball is verified before install
 - **Cross-platform** — Linux, macOS, Windows (Git Bash)
 
@@ -35,5 +35,6 @@ Buckler is a **harness-neutral** policy engine: declarative YAML rules evaluate 
 | **Troubleshooting (hooks, policy, audit log)** | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Rule YAML schema | [docs/rule-schema.md](docs/rule-schema.md) |
 | Default `agent-git` pack matrix | [docs/agent-git.md](docs/agent-git.md) |
+| Default `agent-gh` pack matrix | [docs/agent-gh.md](docs/agent-gh.md) |
 | Path resolution (XDG, Windows, env overrides) | [docs/paths.md](docs/paths.md) |
 | Migration from `rethunk-mcp-nudge.py` | [docs/migration.md](docs/migration.md) |

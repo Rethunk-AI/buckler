@@ -28,7 +28,7 @@ Buckler is a **harness-neutral policy engine**. Its core evaluator knows nothing
                      ▼
 ┌─────────────────────────────────────────────┐
 │               YAML Packs                    │
-│  packs/agent-git.yaml   (default-on)        │
+│  packs/agent-git.yaml, packs/agent-gh.yaml  (default-on) │
 │  ~/.config/buckler/rules.d/*.yaml           │
 └─────────────────────────────────────────────┘
 ```

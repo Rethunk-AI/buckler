@@ -13,7 +13,7 @@ LLM + dev orientation. **This file is intentionally thin** — it points at the 
 | Path resolution (XDG, Windows Git Bash, env overrides) | [docs/paths.md](docs/paths.md) |
 | Cursor adapter mapping + `hooks.json` wiring | [docs/adapters/cursor.md](docs/adapters/cursor.md) |
 | Adapter index + how to add a harness | [docs/adapters/README.md](docs/adapters/README.md) |
-| Default Git pack operator matrix | [docs/agent-git.md](docs/agent-git.md) |
+| Default Git / GitHub CLI pack matrices | [docs/agent-git.md](docs/agent-git.md), [docs/agent-gh.md](docs/agent-gh.md) |
 | Dev setup, commit conventions, MCP policy, CI | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Threat model, Cosign verification, vulnerability reporting | [SECURITY.md](SECURITY.md) |
 | Troubleshooting runbook (hooks, policy, audit log) | [docs/troubleshooting.md](docs/troubleshooting.md) |

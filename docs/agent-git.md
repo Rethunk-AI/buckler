@@ -1,6 +1,6 @@
 # Agent-safe Git Pack (`agent-git`)
 
-The `agent-git` pack ships enabled by default. It makes it safe to give your AI coding agent access to `git` and `gh` without worrying about them destroying your version history or remote repositories.
+The `agent-git` pack ships enabled by default. It makes it safe to give your AI coding agent access to **`git`** without worrying about remote destruction or uncontrolled commits. Destructive **`gh`** commands are covered by the separate **`agent-gh`** pack ([docs/agent-gh.md](agent-gh.md)).
 
 ## Design rationale
 
@@ -25,7 +25,7 @@ Buckler intercepts these commands before execution and either blocks them outrig
 | `deny-git-remote-remove` | pre_shell_exec, pre_shell_tool | `git` | `remote remove` or `remote rm` | **Deny** | Remote deletion |
 | `warn-git-add` | pre_shell_exec, pre_shell_tool | `git` | `add` | **Nudge** | Steering toward MCP; non-blocking |
 | `warn-git-push-force-with-lease` | pre_shell_exec, pre_shell_tool | `git` | `push` + `--force-with-lease` | **Nudge** | Warn; baseline allows; strict denies |
-| `nudge-mcp-available` | post_tool_success | any git/gh shell tool | — | **Nudge** | Reminds agent that MCP tools exist |
+| `nudge-mcp-available` | post_tool_success | `git` shell tool | — | **Nudge** | Reminds agent that MCP tools exist |
 
 ## Strict tier additions (`tier: strict`)
 
@@ -49,7 +49,7 @@ The parser avoids common false positives:
 | `git log --grep=commit` | Not blocked | "commit" is an argument, not a subcommand |
 | `git show HEAD~1` | Not blocked | `show` subcommand, not `commit` |
 | `git branch commit-review` | Not blocked | `branch` subcommand |
-| `git commit-graph write` | Blocked | `commit-graph` treated as subcommand starting with "commit" — intentional conservative match |
+| `git commit-graph write` | Not blocked | Subcommand is `commit-graph`, not `commit` (exact match) |
 
 ## Bypass
 
@@ -61,7 +61,4 @@ The bypass rule has priority 1000 (higher than all git rules). Set `RETHUNK_ALLO
 
 ## MCP steering (nudge)
 
-The `nudge-mcp-available` rule injects `additional_context` into post-tool signals when the agent runs raw `git` or `gh` commands, reminding it to use the available MCP tools instead:
-
-- `user-rethunk-git` / `batch_commit` for staging and committing
-- `user-rethunk-github` for GitHub operations (PRs, issues, CI)
+The `nudge-mcp-available` rule injects `additional_context` into post-tool signals when the agent runs raw **`git`** commands. For **`gh`**, see the `nudge-mcp-github-cli` rule in [agent-gh.md](agent-gh.md).
