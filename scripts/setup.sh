@@ -170,7 +170,7 @@ _strip_hooks() {
     _info "Removing Buckler entries from hooks.json..."
     "$py" -m buckler.hooks strip \
         --hooks-json "$(_cursor_hooks_json)" 2>/dev/null \
-        || _warn "Could not strip hooks.json automatically. Remove 'buckler:*' entries manually."
+        || _warn "Could not strip hooks.json automatically. Remove '${BUCKLER_HOOK_PREFIX}'* entries manually."
 }
 
 # ── Legacy migration ───────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ _purge_legacy() {
     local hooks_json
     hooks_json="$(_cursor_hooks_json)"
     [[ -f "$hooks_json" ]] || return 0
-    _info "Removing legacy rethunk-mcp-nudge.py hook entries..."
+    _info "Removing legacy rethunk-mcp-nudge.py hook entries (active hook prefix: ${BUCKLER_HOOK_PREFIX})..."
     python3 - "$hooks_json" <<'PYEOF'
 import json, sys
 path = sys.argv[1]
