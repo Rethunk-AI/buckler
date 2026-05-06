@@ -6,7 +6,7 @@
 
 | Slug | State | DTG | Owner |
 |------|-------|-----|-------|
-| code-quality-sweep | DRAFT | 060431ZMAY26 | Bastion (J-3) |
+| _(none)_ | | | |
 
 ## Done
 
@@ -14,6 +14,7 @@
 
 | Slug | DTG | Note |
 |------|-----|------|
+| code-quality-sweep | 060616ZMAY26 | Code quality sweep: template format_map, utf-8 CLI IO, TypedDict hooks, adapter registry, paths Windows heuristic, workspace_roots pair, HUMANS audit note, CONTRIBUTING coverage, CHANGELOG 0.1.0; misnamed test removed; 100% coverage. |
 | legacy-deprecation-window | 060611ZMAY26 | Remove rethunk-mcp-nudge migration scaffolding: purge-legacy path, docs, pack/HUMANS/README/skill copy; Q-table ratified; no greenfield HIGH CI gate (CONTRIBUTING note). |
 | docs-and-runbooks | 060500ZMAY26 | SECURITY known-parser bypasses table + threat cross-link; HUMANS audit log operations; docs/troubleshooting.md; README/AGENTS/cursor-skill links; Q-table ratified; doc-audit clean. |
 | ci-hygiene | 060455ZMAY26 | Python matrix (ubuntu 3.11–3.13, mac/win 3.13), setup.sh shellcheck SC2034 fix via BUCKLER_HOOK_PREFIX, coherence test, CONTRIBUTING CI docs, deliberate shellcheck CI red proof (run 25417202183). |
@@ -28,6 +29,8 @@
 | Slug | DTG | Note |
 |------|-----|------|
 | _(none)_ | | |
+
+
 
 
 

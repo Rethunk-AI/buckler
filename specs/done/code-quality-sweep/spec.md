@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | DRAFT 060431ZMAY26 |
+| Status | DONE 060616ZMAY26 — Code quality sweep: template format_map, utf-8 CLI IO, TypedDict hooks, adapter registry, paths Windows heuristic, workspace_roots pair, HUMANS audit note, CONTRIBUTING coverage, CHANGELOG 0.1.0; misnamed test removed; 100% coverage. |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. One misleading test name (P5) plus a table of small smells (P9): individually trivial, collectively cohesive — bundled here as a single sweep so each item is acknowledged and lands rather than getting deferred indefinitely. |
@@ -75,12 +75,12 @@ The README CI badge URL targets a private GitHub repo (`Rethunk-AI/buckler`). Fo
 
 | Q | Proposal | Status |
 |---|----------|--------|
-| Q1 | Misnamed `test_evaluate_rule_priority_tie_higher_severity_wins`: **delete** (the line-263 sibling already covers the actual semantics) or **rewrite** to genuinely tie two rules. Proposal: **delete**. | **Open** |
-| Q2 | Audit-log concurrency: ship `flock` now or document serial-invocation assumption and defer? Proposal: **document and defer** — no observed race; locking adds Windows complexity. | **Open** |
-| Q3 | README badge for a private repo: **leave** (assuming public-on-tag) or **swap** for self-hosted? Proposal: **leave** if the repo will go public when 0.1.0 ships; **swap** if not. Operator answer required. | **Open** |
-| Q4 | CHANGELOG / version coherence: tag `0.1.0` now, set `0.1.0.dev0` placeholder, or stay `0.1.0` + Unreleased forever? Proposal: **`0.1.0.dev0`** until `parser-bypass-hardening` lands, then tag `0.1.0`. | **Open** |
-| Q5 | Should the typed `HookDefinition` `TypedDict` use `total=False` (allow optional keys like `matchers`) or `total=True` with `NotRequired[…]` annotations (Python 3.11+)? Proposal: **`NotRequired`** — clearer at the use site, matches `requires-python = ">=3.11"`. | **Open** |
-| Q6 | Cursor `workspace_roots` ordering when both `workspace_root` and `cwd` differ: `[workspace_root, cwd]` or `[cwd, workspace_root]`? Proposal: **`[workspace_root, cwd]`** — workspace is the broader context. | **Open** |
+| Q1 | Misnamed `test_evaluate_rule_priority_tie_higher_severity_wins`: **delete** (the line-263 sibling already covers the actual semantics) or **rewrite** to genuinely tie two rules. Proposal: **delete**. | **Ratified 060800ZMAY26** — **Delete** the misnamed test. |
+| Q2 | Audit-log concurrency: ship `flock` now or document serial-invocation assumption and defer? Proposal: **document and defer** — no observed race; locking adds Windows complexity. | **Ratified 060800ZMAY26** — **Document** serial/best-effort assumption in `HUMANS.md`; no `flock`. |
+| Q3 | README badge for a private repo: **leave** (assuming public-on-tag) or **swap** for self-hosted? Proposal: **leave** if the repo will go public when 0.1.0 ships; **swap** if not. Operator answer required. | **Ratified 060800ZMAY26** — **Leave** badge (repo going public). |
+| Q4 | CHANGELOG / version coherence: tag `0.1.0` now, set `0.1.0.dev0` placeholder, or stay `0.1.0` + Unreleased forever? Proposal: **`0.1.0.dev0`** until `parser-bypass-hardening` lands, then tag `0.1.0`. | **Ratified 060800ZMAY26** — **`__version__` stays `0.1.0`**; `CHANGELOG.md` **`[0.1.0]`** section with prior `[Unreleased]` bullets (`parser-bypass-hardening` already landed). |
+| Q5 | Should the typed `HookDefinition` `TypedDict` use `total=False` (allow optional keys like `matchers`) or `total=True` with `NotRequired[…]` annotations (Python 3.11+)? Proposal: **`NotRequired`** — clearer at the use site, matches `requires-python = ">=3.11"`. | **Ratified 060800ZMAY26** — **`NotRequired`** for optional keys (e.g. `matchers`). |
+| Q6 | Cursor `workspace_roots` ordering when both `workspace_root` and `cwd` differ: `[workspace_root, cwd]` or `[cwd, workspace_root]`? Proposal: **`[workspace_root, cwd]`** — workspace is the broader context. | **Ratified 060800ZMAY26** — **`[workspace_root, cwd]`**. |
 
 ## Acceptance
 
