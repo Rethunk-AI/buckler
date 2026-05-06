@@ -133,9 +133,7 @@ def _flags_match(rule_flags_any: list[str], rule_flags_all: list[str], actual_fl
     actual_set = set(actual_flags)
     if rule_flags_any and not any(f in actual_set for f in rule_flags_any):
         return False
-    if rule_flags_all and not all(f in actual_set for f in rule_flags_all):
-        return False
-    return True
+    return not (rule_flags_all and not all(f in actual_set for f in rule_flags_all))
 
 
 def _push_has_delete_refspec(segment: str) -> bool:
@@ -144,11 +142,7 @@ def _push_has_delete_refspec(segment: str) -> bool:
         tokens = shlex.split(segment)
     except ValueError:
         return False
-    # Look for tokens that start with ':' and don't look like options
-    for t in tokens:
-        if t.startswith(":") and not t.startswith("::"):
-            return True
-    return False
+    return any(t.startswith(":") and not t.startswith("::") for t in tokens)
 
 
 def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
@@ -184,10 +178,7 @@ def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
 def _match_env(match_cfg: dict[str, Any], env: dict[str, str]) -> bool:
     """Check env var conditions (AND)."""
     env_spec = match_cfg.get("env", {})
-    for key, expected in env_spec.items():
-        if env.get(key) != expected:
-            return False
-    return True
+    return all(env.get(key) == expected for key, expected in env_spec.items())
 
 
 def _match_tool_name(match_cfg: dict[str, Any], tool_name: str | None) -> bool:
@@ -221,10 +212,7 @@ def _matches(rule: dict[str, Any], policy_input: dict[str, Any]) -> bool:
     if not _match_env(match_cfg, env):
         return False
 
-    if not _match_tool_name(match_cfg, tool_name):
-        return False
-
-    return True
+    return _match_tool_name(match_cfg, tool_name)
 
 
 def _action_priority(action: str) -> int:
@@ -251,8 +239,6 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
 
     shell = policy_input.get("shell") or {}
     command = shell.get("command", "")
-    tool = policy_input.get("tool") or {}
-    tool_name = tool.get("name")
 
     template_ctx = {
         "command": command,
@@ -276,11 +262,11 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
                 best_rule = rule
             else:
                 # Higher priority wins; on tie, higher action severity wins
-                if rule["priority"] > best_rule["priority"]:
+                if rule["priority"] > best_rule["priority"] or (
+                    rule["priority"] == best_rule["priority"]
+                    and _action_priority(rule["action"]) > _action_priority(best_rule["action"])
+                ):
                     best_rule = rule
-                elif rule["priority"] == best_rule["priority"]:
-                    if _action_priority(rule["action"]) > _action_priority(best_rule["action"]):
-                        best_rule = rule
 
     if best_rule is None:
         return {
