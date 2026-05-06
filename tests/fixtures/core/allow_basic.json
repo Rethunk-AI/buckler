@@ -1,0 +1,14 @@
+{
+  "input": {
+    "policy_io_version": "1",
+    "trigger": "pre_shell_exec",
+    "shell": {
+      "command": "ls -la",
+      "cwd": "/home/user/project"
+    },
+    "tool": null,
+    "session": null,
+    "env": {}
+  },
+  "expected_decision": "allow"
+}

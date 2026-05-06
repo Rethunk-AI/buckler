@@ -1,0 +1,15 @@
+{
+  "input": {
+    "policy_io_version": "1",
+    "trigger": "pre_shell_exec",
+    "shell": {
+      "command": "git add -A",
+      "cwd": "/home/user/project"
+    },
+    "tool": null,
+    "session": null,
+    "env": {}
+  },
+  "expected_decision": "nudge",
+  "expected_rule_id": "warn-git-add"
+}

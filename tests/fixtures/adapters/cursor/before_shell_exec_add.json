@@ -1,0 +1,18 @@
+{
+  "cursor_input": {
+    "hook_event_name": "beforeShellExecution",
+    "shell_command": "git add src/",
+    "cwd": "/home/user/project",
+    "workspace_root": "/home/user/project"
+  },
+  "expected_policy_input": {
+    "policy_io_version": "1",
+    "trigger": "pre_shell_exec",
+    "shell": {
+      "command": "git add src/",
+      "cwd": "/home/user/project"
+    }
+  },
+  "expected_cursor_output_keys": ["permission"],
+  "expected_permission": "allow"
+}
