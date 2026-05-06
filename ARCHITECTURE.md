@@ -96,6 +96,7 @@ The adapter maps the harness's native event names to abstract `trigger` values (
 ```
 buckler [--driver cursor]          → cursor adapter (reads stdin, writes stdout)
 buckler evaluate [--input/-i F]    → harness-neutral (reads PolicyInput, writes PolicyOutput)
+buckler validate                   → validate pack + user rules YAML (exit 1 on errors)
 python -m buckler.hooks merge      → idempotent hooks.json update
 python -m buckler.hooks strip      → remove Buckler entries from hooks.json
 python -m buckler.hooks status     → show current Buckler entries

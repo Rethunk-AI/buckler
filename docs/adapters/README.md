@@ -7,7 +7,7 @@ Adapters translate between a harness's native hook JSON and Buckler's harness-ne
 | Adapter | Module | Status | Harness docs |
 |---------|--------|--------|-------------|
 | **Cursor** | `buckler.adapters.cursor` | Shipped (v1) | [cursor.md](cursor.md) |
-| **Claude Code** | `buckler.adapters.claude` | Stub | [claude-code.md](claude-code.md) |
+| **Claude Code** | _(planned)_ | Documented only | [claude-code.md](claude-code.md) |
 | **Generic** | (CLI `evaluate` subcommand) | Shipped | [policy-io contract](../contracts/policy-io.md) |
 
 ## How adapters work

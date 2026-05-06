@@ -12,6 +12,7 @@ This adapter maps Cursor's hook events (stdin JSON) to `PolicyInput`, and `Polic
 | `beforeShellExecution` | (all) | `pre_shell_exec` | `true` |
 | `postToolUse` | (all) | `post_tool_success` | `false` |
 | `postToolUseFailure` | (all) | `post_tool_failure` | `false` |
+| _(any other value)_ | — | `unknown_harness_event` | Matches no shipped rules unless you add user rules; default allow. |
 
 ## Cursor stdin JSON → `PolicyInput`
 

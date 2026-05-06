@@ -138,7 +138,19 @@ RETHUNK_ALLOW_SHELL=1 git commit -m "emergency bypass"
 
 Buckler checks for `RETHUNK_ALLOW_SHELL=1` in the shell environment and returns `allow` without evaluating rules.
 
-**This bypass is logged** to `~/.local/state/buckler/audit.log` (if audit logging is enabled in your config).
+**This bypass is logged** to `~/.local/state/buckler/audit.log` when `audit_log = true` in `config.toml` (one line per policy evaluation, including bypass outcomes).
+
+---
+
+## Validate rules YAML
+
+After editing `rules.d` files, check them before relying on hooks (runtime loading skips invalid rules with a warning only):
+
+```bash
+buckler validate
+```
+
+Use `--packs-dir` or `--rules-dir` to override default paths when debugging.
 
 ---
 
@@ -151,7 +163,7 @@ The main config file lives at `~/.config/buckler/config.toml` (created on first 
 # Policy tier: "baseline" (default) or "strict"
 tier = "baseline"
 
-# Log bypass events and rule decisions
+# Log policy decisions to ~/.local/state/buckler/audit.log (append-only, one line per evaluate)
 audit_log = false
 
 [packs]

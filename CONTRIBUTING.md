@@ -71,6 +71,9 @@ uv run pytest tests/test_agent_git.py
 # Cursor adapter round-trips
 uv run pytest tests/test_adapter_cursor.py
 
+# Validate pack YAML (same checks as `buckler validate`)
+uv run pytest tests/test_pack_loader.py
+
 # Lint
 uv run ruff check src/ tests/
 uv run ruff format --check src/ tests/
@@ -98,7 +101,7 @@ GitHub Actions runs on push and pull requests:
 
 - `ci.yml`: `ubuntu-latest`, `macos-latest`, `windows-latest` (Git Bash); `uv sync`; `pytest`; `ruff`.
 - `ci.yml` also runs `shellcheck` (or `bash -n`) on `scripts/setup.sh`.
-- `release.yml`: triggered on version tags; builds a tarball, signs with Cosign keyless, attaches to the GitHub Release.
+- `release.yml`: triggered on version tags; runs the same ruff, format, and mypy gates as `ci.yml`, then `pytest`; builds a tarball, signs with Cosign keyless, attaches to the GitHub Release.
 
 ## Pull request checklist
 
