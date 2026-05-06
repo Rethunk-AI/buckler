@@ -24,24 +24,31 @@ def _input(command: str, trigger: str = "pre_shell_exec", env: dict | None = Non
 
 # ── Deny: git commit ─────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git commit -m 'hello'",
-    "git commit --amend --no-edit",
-    "git -C /some/path commit -m 'x'",
-    "git commit -a -m 'all changes'",
-    "git --git-dir=/repo/.git commit -m 'x'",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit -m 'hello'",
+        "git commit --amend --no-edit",
+        "git -C /some/path commit -m 'x'",
+        "git commit -a -m 'all changes'",
+        "git --git-dir=/repo/.git commit -m 'x'",
+    ],
+)
 def test_deny_git_commit(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "deny", f"Expected deny for: {command!r}"
     assert result["agent_message"] is not None
 
 
-@pytest.mark.parametrize("command", [
-    "git add . && git commit -m 'x'",
-    "cd /tmp; git commit -m 'x'",
-    "git status || git commit -m 'x'",
-])
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add . && git commit -m 'x'",
+        "cd /tmp; git commit -m 'x'",
+        "git status || git commit -m 'x'",
+    ],
+)
 def test_deny_git_commit_in_pipeline(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "deny", f"Expected deny for pipeline: {command!r}"
@@ -49,12 +56,16 @@ def test_deny_git_commit_in_pipeline(command: str):
 
 # ── Deny: force push ──────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git push --force origin main",
-    "git push -f origin main",
-    "git push --force",
-    "git push origin main --force",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push --force origin main",
+        "git push -f origin main",
+        "git push --force",
+        "git push origin main --force",
+    ],
+)
 def test_deny_git_push_force(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "deny", f"Expected deny for: {command!r}"
@@ -62,16 +73,21 @@ def test_deny_git_push_force(command: str):
 
 # ── Deny: push --delete ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git push --delete origin my-branch",
-    "git push -d origin old-feature",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push --delete origin my-branch",
+        "git push -d origin old-feature",
+    ],
+)
 def test_deny_git_push_delete_flag(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "deny", f"Expected deny for: {command!r}"
 
 
 # ── Deny: push --mirror ───────────────────────────────────────────────────────
+
 
 def test_deny_git_push_mirror():
     result = evaluate(_input("git push --mirror origin"))
@@ -80,10 +96,14 @@ def test_deny_git_push_mirror():
 
 # ── Deny: remote remove ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git remote remove origin",
-    "git remote rm upstream",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git remote remove origin",
+        "git remote rm upstream",
+    ],
+)
 def test_deny_git_remote_remove(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "deny", f"Expected deny for: {command!r}"
@@ -91,12 +111,16 @@ def test_deny_git_remote_remove(command: str):
 
 # ── Nudge/warn: git add ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git add -A",
-    "git add src/",
-    "git add .",
-    "git add --all",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add -A",
+        "git add src/",
+        "git add .",
+        "git add --all",
+    ],
+)
 def test_nudge_git_add(command: str):
     result = evaluate(_input(command))
     assert result["decision"] == "nudge", f"Expected nudge for: {command!r}"
@@ -105,11 +129,15 @@ def test_nudge_git_add(command: str):
 
 # ── Allow: bypass via env ─────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git commit -m 'emergency'",
-    "git push --force origin main",
-    "git remote remove origin",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit -m 'emergency'",
+        "git push --force origin main",
+        "git remote remove origin",
+    ],
+)
 def test_bypass_allow(command: str):
     result = evaluate(_input(command, env={"RETHUNK_ALLOW_SHELL": "1"}))
     assert result["decision"] == "allow", f"Expected bypass allow for: {command!r}"
@@ -117,17 +145,21 @@ def test_bypass_allow(command: str):
 
 # ── Allow: benign git commands ────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git status",
-    "git log --oneline -10",
-    "git diff HEAD",
-    "git branch -a",
-    "git fetch origin",
-    "git stash list",
-    "git show HEAD",
-    "git push origin feature-branch",  # normal push (no force/delete/mirror)
-    "git pull origin main",
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git status",
+        "git log --oneline -10",
+        "git diff HEAD",
+        "git branch -a",
+        "git fetch origin",
+        "git stash list",
+        "git show HEAD",
+        "git push origin feature-branch",  # normal push (no force/delete/mirror)
+        "git pull origin main",
+    ],
+)
 def test_allow_benign_git(command: str):
     result = evaluate(_input(command))
     assert result["decision"] in ("allow", "nudge"), (
@@ -137,13 +169,17 @@ def test_allow_benign_git(command: str):
 
 # ── False positive avoidance ──────────────────────────────────────────────────
 
-@pytest.mark.parametrize("command", [
-    "git log --grep=commit",             # 'commit' as grep arg, not subcommand
-    "git show HEAD~1",                    # 'show', not 'commit'
-    "git branch commit-review",          # 'branch', not 'commit'
-    "echo 'git commit message'",         # not even git
-    "cat .git/COMMIT_EDITMSG",          # reading file, not running git
-])
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git log --grep=commit",  # 'commit' as grep arg, not subcommand
+        "git show HEAD~1",  # 'show', not 'commit'
+        "git branch commit-review",  # 'branch', not 'commit'
+        "echo 'git commit message'",  # not even git
+        "cat .git/COMMIT_EDITMSG",  # reading file, not running git
+    ],
+)
 def test_false_positive_avoidance(command: str):
     result = evaluate(_input(command))
     assert result["decision"] != "deny", (
@@ -153,6 +189,7 @@ def test_false_positive_avoidance(command: str):
 
 # ── pre_shell_tool trigger ────────────────────────────────────────────────────
 
+
 def test_pre_shell_tool_trigger_commits():
     """Commit denial also fires on pre_shell_tool (Shell tool interception)."""
     result = evaluate(_input("git commit -m 'x'", trigger="pre_shell_tool"))
@@ -160,6 +197,7 @@ def test_pre_shell_tool_trigger_commits():
 
 
 # ── post_tool_success nudge ───────────────────────────────────────────────────
+
 
 def test_post_tool_mcp_nudge():
     """After a successful git command, the pack injects MCP steering context."""

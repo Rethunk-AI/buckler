@@ -23,10 +23,14 @@ def _load(name: str) -> dict:
 
 # ── Fixture-driven round-trip tests ──────────────────────────────────────────
 
-@pytest.mark.parametrize("fixture_name", [
-    "before_shell_exec_commit.json",
-    "before_shell_exec_add.json",
-])
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "before_shell_exec_commit.json",
+        "before_shell_exec_add.json",
+    ],
+)
 def test_fixture_round_trip(fixture_name: str):
     fx = _load(fixture_name)
     cursor_input = fx["cursor_input"]
@@ -58,6 +62,7 @@ def test_fixture_round_trip(fixture_name: str):
 
 
 # ── adapt_input unit tests ────────────────────────────────────────────────────
+
 
 def test_adapt_before_shell_exec():
     raw = {
@@ -101,6 +106,7 @@ def test_adapt_post_tool_use():
 
 
 # ── adapt_output unit tests ───────────────────────────────────────────────────
+
 
 def test_adapt_output_deny():
     policy_output = {

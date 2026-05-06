@@ -69,6 +69,7 @@ VALID_INPUTS = [
     },
 ]
 
+
 @pytest.mark.parametrize("data", VALID_INPUTS)
 def test_valid_policy_input(data: dict, policy_input_schema: dict):
     jsonschema.validate(instance=data, schema=policy_input_schema)
@@ -86,6 +87,7 @@ INVALID_INPUTS = [
     # Extra field (additionalProperties: false)
     {"policy_io_version": "1", "trigger": "pre_shell_exec", "extra_field": True},
 ]
+
 
 @pytest.mark.parametrize("data", INVALID_INPUTS)
 def test_invalid_policy_input_rejected(data: dict, policy_input_schema: dict):
@@ -124,6 +126,7 @@ VALID_OUTPUTS = [
     },
 ]
 
+
 @pytest.mark.parametrize("data", VALID_OUTPUTS)
 def test_valid_policy_output(data: dict, policy_output_schema: dict):
     jsonschema.validate(instance=data, schema=policy_output_schema)
@@ -142,6 +145,7 @@ INVALID_OUTPUTS = [
     {"policy_io_version": "1", "decision": "allow", "rogue_field": True},
 ]
 
+
 @pytest.mark.parametrize("data", INVALID_OUTPUTS)
 def test_invalid_policy_output_rejected(data: dict, policy_output_schema: dict):
     with pytest.raises(jsonschema.ValidationError):
@@ -150,19 +154,36 @@ def test_invalid_policy_output_rejected(data: dict, policy_output_schema: dict):
 
 # ── Cross-check: core evaluate() output validates against schema ───────────────
 
+
 def test_evaluate_output_is_valid_schema(policy_output_schema: dict):
     """PolicyOutput from evaluate() must always conform to the JSON Schema."""
     from buckler.core import evaluate
 
     test_cases = [
-        {"policy_io_version": "1", "trigger": "pre_shell_exec",
-         "shell": {"command": "git commit -m 'x'"}, "env": {}},
-        {"policy_io_version": "1", "trigger": "pre_shell_exec",
-         "shell": {"command": "git add ."}, "env": {}},
-        {"policy_io_version": "1", "trigger": "pre_shell_exec",
-         "shell": {"command": "ls -la"}, "env": {}},
-        {"policy_io_version": "1", "trigger": "pre_shell_exec",
-         "shell": {"command": "git push --force origin main"}, "env": {}},
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git commit -m 'x'"},
+            "env": {},
+        },
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git add ."},
+            "env": {},
+        },
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "ls -la"},
+            "env": {},
+        },
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git push --force origin main"},
+            "env": {},
+        },
     ]
     for inp in test_cases:
         output = evaluate(inp)

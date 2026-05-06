@@ -31,7 +31,7 @@ def _call_main(argv: list[str], stdin_json: dict | None = None, env: dict | None
 
     stdin_text = json.dumps(stdin_json) if stdin_json is not None else ""
     with (
-        mock.patch("sys.argv", ["buckler"] + argv),
+        mock.patch("sys.argv", ["buckler", *argv]),
         mock.patch("sys.stdin", StringIO(stdin_text)),
         mock.patch.dict("os.environ", env or {}),
     ):
