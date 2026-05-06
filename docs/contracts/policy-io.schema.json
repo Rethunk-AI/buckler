@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Rethunk-AI/buckler/docs/contracts/policy-io.schema.json",
+  "title": "Buckler Policy I/O Schema",
+  "description": "Harness-neutral contract between adapters and buckler.core. policy_io_version=1.",
+  "definitions": {
+    "PolicyInput": {
+      "type": "object",
+      "title": "PolicyInput",
+      "required": ["policy_io_version", "trigger"],
+      "additionalProperties": false,
+      "properties": {
+        "policy_io_version": {
+          "type": "string",
+          "enum": ["1"],
+          "description": "Schema version. Currently always '1'."
+        },
+        "trigger": {
+          "type": "string",
+          "enum": ["pre_shell_tool", "pre_shell_exec", "post_tool_success", "post_tool_failure"],
+          "description": "Abstract event kind; adapters map harness events to these values."
+        },
+        "shell": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["command"],
+              "additionalProperties": false,
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Raw shell command string."
+                },
+                "cwd": {
+                  "oneOf": [{"type": "string"}, {"type": "null"}],
+                  "description": "Working directory."
+                }
+              }
+            }
+          ]
+        },
+        "tool": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["name"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Tool identifier (e.g. 'Shell', 'bash')."
+                },
+                "input": {
+                  "oneOf": [{"type": "object"}, {"type": "null"}],
+                  "description": "Tool input payload (opaque to core)."
+                },
+                "output": {
+                  "oneOf": [{"type": "object"}, {"type": "null"}],
+                  "description": "Tool output (post hooks only)."
+                }
+              }
+            }
+          ]
+        },
+        "session": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "conversation_id": {
+                  "oneOf": [{"type": "string"}, {"type": "null"}]
+                },
+                "workspace_roots": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "model": {
+                  "oneOf": [{"type": "string"}, {"type": "null"}]
+                }
+              }
+            }
+          ]
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Relevant environment variables as string→string map."
+        }
+      }
+    },
+    "PolicyOutput": {
+      "type": "object",
+      "title": "PolicyOutput",
+      "required": ["policy_io_version", "decision"],
+      "additionalProperties": false,
+      "properties": {
+        "policy_io_version": {
+          "type": "string",
+          "enum": ["1"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["allow", "deny", "ask", "nudge"],
+          "description": "Policy decision."
+        },
+        "user_message": {
+          "oneOf": [{"type": "string"}, {"type": "null"}],
+          "description": "Message shown in the IDE UI."
+        },
+        "agent_message": {
+          "oneOf": [{"type": "string"}, {"type": "null"}],
+          "description": "Message injected into the agent context."
+        },
+        "additional_context": {
+          "oneOf": [{"type": "string"}, {"type": "null"}],
+          "description": "Extra context for post-tool nudge signals."
+        },
+        "updated_tool_input": {
+          "oneOf": [{"type": "object"}, {"type": "null"}],
+          "description": "Replacement tool input (pre-tool hooks only)."
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/definitions/PolicyInput"},
+    {"$ref": "#/definitions/PolicyOutput"}
+  ]
+}
