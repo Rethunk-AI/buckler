@@ -23,10 +23,14 @@ def _load(name: str) -> dict:
 
 # ── Fixture-driven round-trip tests ──────────────────────────────────────────
 
-@pytest.mark.parametrize("fixture_name", [
-    "before_shell_exec_commit.json",
-    "before_shell_exec_add.json",
-])
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "before_shell_exec_commit.json",
+        "before_shell_exec_add.json",
+    ],
+)
 def test_fixture_round_trip(fixture_name: str):
     fx = _load(fixture_name)
     cursor_input = fx["cursor_input"]
@@ -58,6 +62,7 @@ def test_fixture_round_trip(fixture_name: str):
 
 
 # ── adapt_input unit tests ────────────────────────────────────────────────────
+
 
 def test_adapt_before_shell_exec():
     raw = {
@@ -101,6 +106,7 @@ def test_adapt_post_tool_use():
 
 
 # ── adapt_output unit tests ───────────────────────────────────────────────────
+
 
 def test_adapt_output_deny():
     policy_output = {
@@ -150,11 +156,23 @@ def test_adapt_output_post_tool_nudge():
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
 
+
 class TestCursorAdapter:
-    def test_unknown_event_falls_back_to_post_tool_success(self):
-        """An unrecognised hook_event_name defaults to post_tool_success (allow path)."""
+    def test_unknown_event_maps_to_unknown_harness_event(self):
+        """Unrecognised hook_event_name uses unknown_harness_event (no shipped rules match)."""
         pi = adapt_input({"hook_event_name": "unknownEvent", "cwd": "/p"})
-        assert pi["trigger"] == "post_tool_success"
+        assert pi["trigger"] == "unknown_harness_event"
+
+    def test_adapt_input_rejects_wrong_policy_io_version(self):
+        from buckler.core import PolicyError
+
+        with pytest.raises(PolicyError, match="policy_io_version"):
+            adapt_input({"hook_event_name": "beforeShellExecution", "policy_io_version": "99"})
+
+    def test_unknown_event_evaluates_to_allow(self):
+        pi = adapt_input({"hook_event_name": "futureHook", "cwd": "/p"})
+        out = evaluate(pi)
+        assert out["decision"] == "allow"
 
     def test_ask_decision_maps_to_cursor_ask(self):
         result = adapt_output(
@@ -168,8 +186,11 @@ class TestCursorAdapter:
             },
             {"hook_event_name": "beforeShellExecution"},
         )
-        assert result == {"permission": "ask", "message": "Confirm?",
-                          "agent_message": "Please confirm."}
+        assert result == {
+            "permission": "ask",
+            "message": "Confirm?",
+            "agent_message": "Please confirm.",
+        }
 
     def test_nudge_on_pre_hook_is_allow_with_messages(self):
         """Nudge on a pre-hook = allow + advisory messages (not a block)."""
@@ -205,19 +226,22 @@ class TestCursorAdapter:
 
     def test_pre_tool_non_shell_has_no_shell_field(self):
         """A preToolUse event for a non-Shell tool produces trigger=pre_shell_tool, shell=None."""
-        pi = adapt_input({
-            "hook_event_name": "preToolUse",
-            "tool_name": "Edit",
-            "tool_input": {"path": "/file.py"},
-            "cwd": "/p",
-            "workspace_root": "/p",
-        })
+        pi = adapt_input(
+            {
+                "hook_event_name": "preToolUse",
+                "tool_name": "Edit",
+                "tool_input": {"path": "/file.py"},
+                "cwd": "/p",
+                "workspace_root": "/p",
+            }
+        )
         assert pi["trigger"] == "pre_shell_tool"
         assert pi["tool"]["name"] == "Edit"
         assert pi["shell"] is None
 
     def test_workspace_root_from_cwd(self):
         """cwd is used as workspace_root when workspace_root key is absent."""
-        pi = adapt_input({"hook_event_name": "beforeShellExecution",
-                          "shell_command": "ls", "cwd": "/myproject"})
+        pi = adapt_input(
+            {"hook_event_name": "beforeShellExecution", "shell_command": "ls", "cwd": "/myproject"}
+        )
         assert pi["session"]["workspace_roots"] == ["/myproject"]

@@ -16,52 +16,87 @@ class TestHooks:
     def test_merge_creates_all_three_entries(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import merge
+
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON))
         names = [h["name"] for h in json.loads(hooks_json.read_text())["hooks"]]
-        assert {"buckler:pre-shell-exec", "buckler:pre-shell-tool", "buckler:post-tool"} <= set(names)
+        assert {"buckler:pre-shell-exec", "buckler:pre-shell-tool", "buckler:post-tool"} <= set(
+            names
+        )
 
     def test_merge_is_idempotent(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import merge
+
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON))
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON))
-        buckler = [h for h in json.loads(hooks_json.read_text())["hooks"]
-                   if h["name"].startswith("buckler:")]
+        buckler = [
+            h
+            for h in json.loads(hooks_json.read_text())["hooks"]
+            if h["name"].startswith("buckler:")
+        ]
         assert len(buckler) == 3
 
     def test_merge_preserves_existing_hooks(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
         hooks_json.write_text(json.dumps({"hooks": [{"name": "other-tool", "event": "x"}]}))
         from buckler.hooks import merge
+
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON))
         names = [h["name"] for h in json.loads(hooks_json.read_text())["hooks"]]
         assert "other-tool" in names and "buckler:pre-shell-exec" in names
 
     def test_strip_removes_buckler_preserves_others(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
-        hooks_json.write_text(json.dumps({"hooks": [
-            {"name": "buckler:pre-shell-exec", "event": "beforeShellExecution", "command": "x"},
-            {"name": "other-tool", "event": "postToolUse"},
-        ]}))
+        hooks_json.write_text(
+            json.dumps(
+                {
+                    "hooks": [
+                        {
+                            "name": "buckler:pre-shell-exec",
+                            "event": "beforeShellExecution",
+                            "command": "x",
+                        },
+                        {"name": "other-tool", "event": "postToolUse"},
+                    ]
+                }
+            )
+        )
         from buckler.hooks import strip
+
         strip(hooks_path=hooks_json)
         names = [h["name"] for h in json.loads(hooks_json.read_text())["hooks"]]
         assert "other-tool" in names and "buckler:pre-shell-exec" not in names
 
-    def test_merge_dry_run_prints_without_writing(self, tmp_path: Path, capsys: pytest.CaptureFixture):
+    def test_merge_dry_run_prints_without_writing(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture
+    ):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import merge
+
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON), dry_run=True)
         out = capsys.readouterr().out
         assert any(h["name"].startswith("buckler:") for h in json.loads(out)["hooks"])
         assert not hooks_json.exists()
 
-    def test_strip_dry_run_reports_without_writing(self, tmp_path: Path, capsys: pytest.CaptureFixture):
+    def test_strip_dry_run_reports_without_writing(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture
+    ):
         hooks_json = tmp_path / "hooks.json"
-        hooks_json.write_text(json.dumps({"hooks": [
-            {"name": "buckler:pre-shell-exec", "event": "beforeShellExecution", "command": "x"}
-        ]}))
+        hooks_json.write_text(
+            json.dumps(
+                {
+                    "hooks": [
+                        {
+                            "name": "buckler:pre-shell-exec",
+                            "event": "beforeShellExecution",
+                            "command": "x",
+                        }
+                    ]
+                }
+            )
+        )
         from buckler.hooks import strip
+
         strip(hooks_path=hooks_json, dry_run=True)
         assert "Would remove" in capsys.readouterr().out
         assert len(json.loads(hooks_json.read_text())["hooks"]) == 1
@@ -69,6 +104,7 @@ class TestHooks:
     def test_status_lists_installed_hooks(self, tmp_path: Path, capsys: pytest.CaptureFixture):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import merge, status
+
         merge(hooks_path=hooks_json, venv_python=Path(PYTHON))
         status(hooks_path=hooks_json)
         assert "buckler:pre-shell-exec" in capsys.readouterr().out
@@ -77,19 +113,24 @@ class TestHooks:
         hooks_json = tmp_path / "hooks.json"
         hooks_json.write_text(json.dumps({"hooks": []}))
         from buckler.hooks import status
+
         status(hooks_path=hooks_json)
         assert "No Buckler hooks" in capsys.readouterr().out
 
     def test_merge_falls_back_when_no_venv_python(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import merge
+
         merge(hooks_path=hooks_json)
-        assert any(h["name"].startswith("buckler:") for h in json.loads(hooks_json.read_text())["hooks"])
+        assert any(
+            h["name"].startswith("buckler:") for h in json.loads(hooks_json.read_text())["hooks"]
+        )
 
     def test_read_hooks_json_returns_empty_on_bad_json(self, tmp_path: Path):
         bad = tmp_path / "hooks.json"
         bad.write_text("not json")
         from buckler.hooks import _read_hooks_json
+
         assert _read_hooks_json(bad) == {}
 
 
@@ -97,35 +138,57 @@ class TestHooksMainInProcess:
     def test_hooks_main_merge(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
         from buckler.hooks import main
-        with mock.patch("sys.argv", [
-            "buckler.hooks", "merge",
-            "--hooks-json", str(hooks_json),
-            "--venv-python", sys.executable,
-        ]):
+
+        with mock.patch(
+            "sys.argv",
+            [
+                "buckler.hooks",
+                "merge",
+                "--hooks-json",
+                str(hooks_json),
+                "--venv-python",
+                sys.executable,
+            ],
+        ):
             main()
         data = json.loads(hooks_json.read_text())
         assert any(h["name"].startswith("buckler:") for h in data["hooks"])
 
     def test_hooks_main_strip(self, tmp_path: Path):
         hooks_json = tmp_path / "hooks.json"
-        hooks_json.write_text(json.dumps({"hooks": [
-            {"name": "buckler:pre-shell-exec", "event": "beforeShellExecution", "command": "x"}
-        ]}))
+        hooks_json.write_text(
+            json.dumps(
+                {
+                    "hooks": [
+                        {
+                            "name": "buckler:pre-shell-exec",
+                            "event": "beforeShellExecution",
+                            "command": "x",
+                        }
+                    ]
+                }
+            )
+        )
         from buckler.hooks import main
+
         with mock.patch("sys.argv", ["buckler.hooks", "strip", "--hooks-json", str(hooks_json)]):
             main()
-        assert not any(h["name"].startswith("buckler:") for h in json.loads(hooks_json.read_text())["hooks"])
+        assert not any(
+            h["name"].startswith("buckler:") for h in json.loads(hooks_json.read_text())["hooks"]
+        )
 
     def test_hooks_main_status(self, tmp_path: Path, capsys: pytest.CaptureFixture):
         hooks_json = tmp_path / "hooks.json"
         hooks_json.write_text(json.dumps({"hooks": []}))
         from buckler.hooks import main
+
         with mock.patch("sys.argv", ["buckler.hooks", "status", "--hooks-json", str(hooks_json)]):
             main()
         assert "No Buckler hooks" in capsys.readouterr().out
 
     def test_hooks_main_no_subcommand(self, capsys: pytest.CaptureFixture):
         from buckler.hooks import main
+
         with mock.patch("sys.argv", ["buckler.hooks"]):
             main()
         combined = capsys.readouterr()
@@ -134,6 +197,7 @@ class TestHooksMainInProcess:
     def test_buckler_command_with_venv_python(self, tmp_path: Path):
         """_buckler_command(venv_python) hits the explicit venv_python branch."""
         from buckler.hooks import _buckler_command
+
         result = _buckler_command(venv_python=Path(sys.executable))
         assert sys.executable in result
         assert "--driver cursor" in result
@@ -146,12 +210,28 @@ class TestHooksMainInProcess:
         py.chmod(0o755)
         with mock.patch("buckler.hooks.paths.current_dir", return_value=tmp_path):
             from buckler.hooks import _buckler_command
+
             result = _buckler_command()
         assert str(py) in result
+
+    def test_buckler_command_current_dir_windows_venv(self, tmp_path: Path):
+        """_buckler_command() uses .venv/Scripts/python.exe when that layout exists."""
+        py = tmp_path / ".venv" / "Scripts" / "python.exe"
+        py.parent.mkdir(parents=True)
+        py.touch()
+        with (
+            mock.patch("buckler.hooks.paths.current_dir", return_value=tmp_path),
+            mock.patch("buckler.paths._is_windows", return_value=True),
+        ):
+            from buckler.hooks import _buckler_command
+
+            result = _buckler_command()
+        assert str(py).replace("\\", "/") in result.replace("\\", "/")
 
     def test_read_hooks_json_invalid_json(self, tmp_path: Path):
         """_read_hooks_json returns {} when file contains bad JSON."""
         bad = tmp_path / "hooks.json"
         bad.write_text("not json")
         from buckler.hooks import _read_hooks_json
+
         assert _read_hooks_json(bad) == {}

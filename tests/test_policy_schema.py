@@ -61,6 +61,8 @@ VALID_INPUTS = [
         "shell": {"command": "git commit"},
         "env": {"RETHUNK_ALLOW_SHELL": "1"},
     },
+    # Adapter escape hatch trigger (matches no shipped rules by default)
+    {"policy_io_version": "1", "trigger": "unknown_harness_event"},
     # Post-tool failure trigger
     {
         "policy_io_version": "1",

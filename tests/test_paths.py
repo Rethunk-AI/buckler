@@ -45,7 +45,9 @@ class TestPaths:
             assert paths.config_dir() == tmp_path / "roaming" / "Buckler"
             assert paths.state_dir() == tmp_path / "local" / "Buckler" / "state"
 
-    def test_current_dir_unix_follows_symlink(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    def test_current_dir_unix_follows_symlink(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ):
         """Unix: current_dir() resolves the current symlink to the installed version."""
         ver_dir = tmp_path / "versions" / "0.1.0"
         ver_dir.mkdir(parents=True)
@@ -122,3 +124,27 @@ class TestPaths:
             from buckler import paths
 
             assert paths.current_dir() is None
+
+    def test_project_venv_python_unix(self, tmp_path: Path):
+        py = tmp_path / ".venv" / "bin" / "python"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        with mock.patch("buckler.paths._is_windows", return_value=False):
+            from buckler import paths
+
+            assert paths.project_venv_python(tmp_path) == py
+
+    def test_project_venv_python_windows(self, tmp_path: Path):
+        py = tmp_path / ".venv" / "Scripts" / "python.exe"
+        py.parent.mkdir(parents=True)
+        py.write_text("")
+        with mock.patch("buckler.paths._is_windows", return_value=True):
+            from buckler import paths
+
+            assert paths.project_venv_python(tmp_path) == py
+
+    def test_project_venv_python_missing(self, tmp_path: Path):
+        with mock.patch("buckler.paths._is_windows", return_value=False):
+            from buckler import paths
+
+            assert paths.project_venv_python(tmp_path) is None
