@@ -544,29 +544,35 @@ class TestCorePolicyValidation:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ):
-        """If the state directory cannot be written, policy outcome is still returned."""
+        """If the audit file cannot be written, policy outcome is still returned."""
         cfg_home = tmp_path / "cfg"
         state_home = tmp_path / "state"
         cfg_home.mkdir()
         state_home.mkdir()
+        log_path = state_home / "audit.log"
         (cfg_home / "config.toml").write_text('[core]\naudit_log = true\ntier = "baseline"\n')
         monkeypatch.setenv("BUCKLER_CONFIG_HOME", str(cfg_home))
         monkeypatch.setenv("BUCKLER_STATE_HOME", str(state_home))
-        state_home.chmod(0o000)
-        try:
-            with caplog.at_level(logging.WARNING, logger="buckler.core"):
-                result = evaluate(
-                    {
-                        "policy_io_version": "1",
-                        "trigger": "pre_shell_exec",
-                        "shell": {"command": "git status", "cwd": "/p"},
-                        "env": {},
-                    }
-                )
-            assert result["decision"] == "allow"
-            assert any("Audit log write failed" in r.message for r in caplog.records), caplog.text
-        finally:
-            state_home.chmod(0o700)
+
+        real_open = Path.open
+
+        def selective_open(self: Path, mode: str = "r", *args: object, **kwargs: object):
+            if mode == "a" and self.resolve() == log_path.resolve():
+                raise OSError("simulated audit write failure")
+            return real_open(self, mode, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", selective_open)
+        with caplog.at_level(logging.WARNING, logger="buckler.core"):
+            result = evaluate(
+                {
+                    "policy_io_version": "1",
+                    "trigger": "pre_shell_exec",
+                    "shell": {"command": "git status", "cwd": "/p"},
+                    "env": {},
+                }
+            )
+        assert result["decision"] == "allow"
+        assert any("Audit log write failed" in r.message for r in caplog.records), caplog.text
 
     def test_evaluate_rejects_wrong_policy_io_version(self):
         from buckler.core import PolicyError, evaluate

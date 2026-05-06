@@ -18,18 +18,19 @@ class TestPaths:
         assert paths.data_dir() == tmp_path / "custom"
 
     def test_xdg_vars_respected(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-        """XDG_DATA/CONFIG/STATE_HOME are all honoured as fallbacks."""
+        """XDG_DATA/CONFIG/STATE_HOME are all honoured as fallbacks (Unix layout)."""
         monkeypatch.delenv("BUCKLER_DATA_HOME", raising=False)
         monkeypatch.delenv("BUCKLER_CONFIG_HOME", raising=False)
         monkeypatch.delenv("BUCKLER_STATE_HOME", raising=False)
         monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
-        from buckler import paths
+        with mock.patch("buckler.paths._is_windows", return_value=False):
+            from buckler import paths
 
-        assert paths.data_dir() == tmp_path / "data" / "buckler"
-        assert paths.config_dir() == tmp_path / "cfg" / "buckler"
-        assert paths.state_dir() == tmp_path / "state" / "buckler"
+            assert paths.data_dir() == tmp_path / "data" / "buckler"
+            assert paths.config_dir() == tmp_path / "cfg" / "buckler"
+            assert paths.state_dir() == tmp_path / "state" / "buckler"
 
     def test_windows_paths_use_appdata(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         """On Windows, LOCALAPPDATA/APPDATA env vars drive all three dir functions."""

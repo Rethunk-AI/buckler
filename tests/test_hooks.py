@@ -244,12 +244,15 @@ class TestHooksMainInProcess:
         assert "--driver cursor" in result
 
     def test_buckler_command_current_dir_with_venv(self, tmp_path: Path):
-        """_buckler_command() with current_dir set and .venv/bin/python present."""
+        """_buckler_command() with current_dir set and .venv/bin/python present (POSIX layout)."""
         py = tmp_path / ".venv" / "bin" / "python"
         py.parent.mkdir(parents=True)
         py.write_text("#!/usr/bin/env python3")
         py.chmod(0o755)
-        with mock.patch("buckler.hooks.paths.current_dir", return_value=tmp_path):
+        with (
+            mock.patch("buckler.hooks.paths.current_dir", return_value=tmp_path),
+            mock.patch("buckler.paths._is_windows", return_value=False),
+        ):
             from buckler.hooks import _buckler_command
 
             result = _buckler_command()
