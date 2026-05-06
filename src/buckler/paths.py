@@ -112,3 +112,12 @@ def audit_log() -> Path:
 def cursor_hooks_json() -> Path:
     """Cursor's global hooks.json path."""
     return _home() / ".cursor" / "hooks.json"
+
+
+def project_venv_python(project_root: Path) -> Path | None:
+    """Return the interpreter inside ``project_root/.venv`` if it exists."""
+    if _is_windows():
+        candidate = project_root / ".venv" / "Scripts" / "python.exe"
+    else:
+        candidate = project_root / ".venv" / "bin" / "python"
+    return candidate if candidate.exists() else None
