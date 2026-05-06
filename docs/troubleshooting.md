@@ -30,7 +30,7 @@ Operator playbook for common Buckler issues. See also [HUMANS.md](../HUMANS.md),
    ```
 3. **Compare** the emitted decision to your expectation.
 
-**Common cause:** parser bypass — the shell command was segmented or escaped in a way rules never see. See [SECURITY.md § Known parser bypasses](../SECURITY.md#known-parser-bypasses-status) and [specs/active/parser-bypass-hardening/spec.md](../specs/active/parser-bypass-hardening/spec.md).
+**Common cause:** parser bypass — the shell command was segmented or escaped in a way rules never see. See [SECURITY.md § Known parser bypasses](../SECURITY.md#known-parser-bypasses-status) and [specs/done/parser-bypass-hardening/spec.md](../specs/done/parser-bypass-hardening/spec.md).
 
 ---
 
