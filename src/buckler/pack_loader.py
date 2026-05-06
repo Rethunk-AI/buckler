@@ -125,10 +125,10 @@ def load_config() -> dict[str, Any]:
     if not cfg_file.exists():
         return defaults
     try:
-        import tomllib  # type: ignore[import]
+        import tomllib  # stdlib on Python 3.11+
     except ImportError:
         try:
-            import tomllib  # type: ignore[no-redef]
+            import tomli as tomllib  # type: ignore[no-redef]  # backport for < 3.11
         except ImportError:
             log.warning("tomllib not available; using default config")
             return defaults
