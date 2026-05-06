@@ -51,8 +51,8 @@ def _buckler_command(venv_python: Path | None = None) -> str:
         return f"{venv_python} -m buckler --driver cursor"
     cur = paths.current_dir()
     if cur is not None:
-        py = cur / ".venv" / "bin" / "python"
-        if py.exists():
+        py = paths.project_venv_python(cur)
+        if py is not None:
             return f"{py} -m buckler --driver cursor"
     # Development fallback: use the active Python
     return f"{sys.executable} -m buckler --driver cursor"
@@ -76,7 +76,9 @@ def _write_hooks_json(path: Path, data: dict[str, Any]) -> None:
         f.write("\n")
 
 
-def merge(hooks_path: Path | None = None, venv_python: Path | None = None, dry_run: bool = False) -> None:
+def merge(
+    hooks_path: Path | None = None, venv_python: Path | None = None, dry_run: bool = False
+) -> None:
     """Idempotently merge Buckler hook entries into hooks.json."""
     target = hooks_path or paths.cursor_hooks_json()
     command = _buckler_command(venv_python)
