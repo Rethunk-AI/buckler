@@ -7,7 +7,7 @@ Status: IN_PROGRESS 060452ZMAY26
 - [x] [HUMAN] Ratify Q-table (Q1–Q4), especially Q1: delete `BUCKLER_HOOK_PREFIX` vs wire through `_strip_hooks` / `_purge_legacy`.
 - [x] Add Python matrix to `.github/workflows/ci.yml` test job (ubuntu 3.11–3.13; macOS/Windows 3.13); pin installs per matrix; keep `fail-fast: false`.
 - [x] Fix `scripts/setup.sh` so `shellcheck --shell=bash --severity=warning` exits 0 (after Q1 decision).
-- [ ] Run one-shot deliberate shellcheck failure on CI; confirm red; revert (acceptance A3). _Procedure documented in `CONTRIBUTING.md`; operator runs on GitHub before/after merge._
+- [x] Run one-shot deliberate shellcheck failure on CI; confirm red; revert (acceptance A3). Draft PR #1 (since closed): shellcheck job failed with SC2034 on `SHELLCHECK_PROOF_SC2034` (GitHub Actions run `25417202183`); branch removed after close.
 - [x] Update `CONTRIBUTING.md` CI section: Python/OS matrix and blocking shellcheck expectation (acceptance A4).
 - [x] Confirm `pyproject.toml` classifiers remain aligned with the matrix (acceptance A5).
 
