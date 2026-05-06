@@ -148,3 +148,30 @@ class TestPaths:
             from buckler import paths
 
             assert paths.project_venv_python(tmp_path) is None
+
+    def test_is_windows_comspec_on_linux_is_false(self, monkeypatch: pytest.MonkeyPatch):
+        """Linux (or any non-Windows POSIX) must not treat COMSPEC alone as Windows."""
+        monkeypatch.setenv("COMSPEC", r"C:\Windows\System32\cmd.exe")
+        monkeypatch.setenv("OSTYPE", "linux-gnu")
+        with mock.patch("buckler.paths.platform.system", return_value="Linux"):
+            from buckler.paths import _is_windows
+
+            assert _is_windows() is False
+
+    def test_is_windows_true_when_platform_name_is_windows(self):
+        with mock.patch("buckler.paths.platform.system", return_value="Windows"):
+            from buckler.paths import _is_windows
+
+            assert _is_windows() is True
+
+    @pytest.mark.parametrize("otype", ["msys", "cygwin"])
+    def test_is_windows_msys_cygwin_uses_comspec_when_not_windows_platform(
+        self, monkeypatch: pytest.MonkeyPatch, otype: str
+    ):
+        """Git Bash / Cygwin: treat as Windows layout when COMSPEC is set (path resolution)."""
+        monkeypatch.setenv("OSTYPE", otype)
+        monkeypatch.setenv("COMSPEC", r"C:\Windows\System32\cmd.exe")
+        with mock.patch("buckler.paths.platform.system", return_value="Linux"):
+            from buckler.paths import _is_windows
+
+            assert _is_windows() is True

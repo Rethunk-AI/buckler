@@ -28,7 +28,11 @@ def _home() -> Path:
 
 
 def _is_windows() -> bool:
-    return platform.system() == "Windows" or bool(os.environ.get("COMSPEC"))
+    if platform.system() == "Windows":
+        return True
+    if os.environ.get("OSTYPE", "") in ("msys", "cygwin"):
+        return bool(os.environ.get("COMSPEC"))
+    return False
 
 
 def data_dir() -> Path:
