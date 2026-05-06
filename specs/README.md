@@ -6,7 +6,6 @@
 
 | Slug | State | DTG | Owner |
 |------|-------|-----|-------|
-| docs-and-runbooks | IN_PROGRESS | 060459ZMAY26 | Bastion (J-3) |
 | code-quality-sweep | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | hooks-cross-platform-quoting | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | legacy-deprecation-window | DRAFT | 060431ZMAY26 | Bastion (J-3) |
@@ -19,6 +18,7 @@
 
 | Slug | DTG | Note |
 |------|-----|------|
+| docs-and-runbooks | 060500ZMAY26 | SECURITY known-parser bypasses table + threat cross-link; HUMANS audit log operations; docs/troubleshooting.md; README/AGENTS/cursor-skill links; Q-table ratified; doc-audit clean. |
 | ci-hygiene | 060455ZMAY26 | Python matrix (ubuntu 3.11–3.13, mac/win 3.13), setup.sh shellcheck SC2034 fix via BUCKLER_HOOK_PREFIX, coherence test, CONTRIBUTING CI docs, deliberate shellcheck CI red proof (run 25417202183). |
 
 ## Parked
@@ -28,6 +28,7 @@
 | Slug | DTG | Note |
 |------|-----|------|
 | _(none)_ | | |
+
 
 
 

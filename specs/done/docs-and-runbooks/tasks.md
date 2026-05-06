@@ -1,6 +1,6 @@
 # Tasks — docs-and-runbooks
 
-Status: IN_PROGRESS 060459ZMAY26 — Bastion (J-3) claims execution
+Status: DONE 060500ZMAY26 — SECURITY known-parser bypasses table + threat cross-link; HUMANS audit log operations; docs/troubleshooting.md; README/AGENTS/cursor-skill links; Q-table ratified; doc-audit clean.
 
 ## P0
 

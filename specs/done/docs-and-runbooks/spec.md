@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | IN_PROGRESS 060459ZMAY26 — Bastion (J-3) claims execution |
+| Status | DONE 060500ZMAY26 — SECURITY known-parser bypasses table + threat cross-link; HUMANS audit log operations; docs/troubleshooting.md; README/AGENTS/cursor-skill links; Q-table ratified; doc-audit clean. |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. Three documentation gaps surfaced: (a) `SECURITY.md`'s threat-model table only enumerates *covered* threats, not the parser bypasses currently open; (b) `HUMANS.md` mentions the audit log but says nothing about rotation, max size, or SIEM forwarding; (c) the most common debugging case — "the hook fired but the command was allowed when I expected deny" — has a one-line answer in `HUMANS.md` that's easy to miss. |
