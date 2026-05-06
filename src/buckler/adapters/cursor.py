@@ -7,6 +7,7 @@ Supported events:
   preToolUse (Shell)    → trigger: pre_shell_tool
   postToolUse           → trigger: post_tool_success
   postToolUseFailure    → trigger: post_tool_failure
+  (unknown)             → trigger: unknown_harness_event (matches no builtin rules)
 
 See docs/adapters/cursor.md for the full field mapping.
 """
@@ -16,6 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 from buckler import POLICY_IO_VERSION
+from buckler.core import PolicyError
 
 _EVENT_TO_TRIGGER = {
     "beforeShellExecution": "pre_shell_exec",
@@ -27,11 +29,18 @@ _EVENT_TO_TRIGGER = {
 
 def adapt_input(raw: dict[str, Any]) -> dict[str, Any]:
     """Translate Cursor hook stdin JSON to PolicyInput."""
+    raw_ver = raw.get("policy_io_version")
+    if raw_ver is not None and str(raw_ver) != POLICY_IO_VERSION:
+        raise PolicyError(
+            f"Unsupported policy_io_version on Cursor payload: expected "
+            f"{POLICY_IO_VERSION!r}, got {raw_ver!r}"
+        )
+
     event = raw.get("hook_event_name", "")
     trigger = _EVENT_TO_TRIGGER.get(event)
     if trigger is None:
-        # Unknown event: default to post_tool_success (allow-by-default path)
-        trigger = "post_tool_success"
+        # Unknown event: use a trigger that matches no shipped rules (default allow).
+        trigger = "unknown_harness_event"
 
     shell: dict[str, Any] | None = None
     tool: dict[str, Any] | None = None
