@@ -47,11 +47,7 @@ def test_ubuntu_rows_cover_all_classifier_minors() -> None:
     doc = yaml.safe_load(_CI_YML.read_text(encoding="utf-8"))
     include = doc["jobs"]["test"]["strategy"]["matrix"]["include"]
     minors = _minor_python_classifiers(_PYPROJECT)
-    ubuntu = {
-        row["python-version"]
-        for row in include
-        if row["os"] == "ubuntu-latest"
-    }
+    ubuntu = {row["python-version"] for row in include if row["os"] == "ubuntu-latest"}
     assert minors <= ubuntu, (
         "each classifier minor must appear on at least one ubuntu-latest matrix row "
         f"(have {sorted(ubuntu)}, need {sorted(minors)})"
