@@ -1,6 +1,6 @@
 # Tasks — ci-hygiene
 
-Status: IN_PROGRESS 060452ZMAY26
+Status: DONE 060455ZMAY26 — Python matrix (ubuntu 3.11–3.13, mac/win 3.13), setup.sh shellcheck SC2034 fix via BUCKLER_HOOK_PREFIX, coherence test, CONTRIBUTING CI docs, deliberate shellcheck CI red proof (run 25417202183).
 
 ## P0
 

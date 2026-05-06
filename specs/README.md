@@ -6,7 +6,6 @@
 
 | Slug | State | DTG | Owner |
 |------|-------|-----|-------|
-| ci-hygiene | IN_PROGRESS | 060452ZMAY26 | Bastion (J-3) |
 | code-quality-sweep | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | docs-and-runbooks | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | hooks-cross-platform-quoting | DRAFT | 060431ZMAY26 | Bastion (J-3) |
@@ -20,7 +19,7 @@
 
 | Slug | DTG | Note |
 |------|-----|------|
-| _(none)_ | | |
+| ci-hygiene | 060455ZMAY26 | Python matrix (ubuntu 3.11–3.13, mac/win 3.13), setup.sh shellcheck SC2034 fix via BUCKLER_HOOK_PREFIX, coherence test, CONTRIBUTING CI docs, deliberate shellcheck CI red proof (run 25417202183). |
 
 ## Parked
 
@@ -29,4 +28,5 @@
 | Slug | DTG | Note |
 |------|-----|------|
 | _(none)_ | | |
+
 

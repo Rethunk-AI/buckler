@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | IN_PROGRESS 060452ZMAY26 — Bastion (J-3) claims execution |
+| Status | DONE 060455ZMAY26 — Python matrix (ubuntu 3.11–3.13, mac/win 3.13), setup.sh shellcheck SC2034 fix via BUCKLER_HOOK_PREFIX, coherence test, CONTRIBUTING CI docs, deliberate shellcheck CI red proof (run 25417202183). |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. Two CI gating gaps: (a) `shellcheck --severity=warning scripts/setup.sh` exits 1 today on `SC2034` (`BUCKLER_HOOK_PREFIX` declared but never used), suggesting either CI hasn't actually re-run since the constant was orphaned or the step is silently advisory; (b) `pyproject.toml` claims support for Python 3.11 / 3.12 / 3.13 but `ci.yml` runs only one `uv python install` per OS, so the matrix is implicit and the support promise is unverified. |
