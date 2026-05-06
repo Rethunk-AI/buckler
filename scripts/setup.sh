@@ -2,7 +2,7 @@
 # Buckler setup script — install | update | uninstall
 # Supports Linux, macOS, and Windows (Git Bash).
 # Usage:
-#   bash setup.sh install [--purge-legacy]
+#   bash setup.sh install
 #   bash setup.sh update
 #   bash setup.sh uninstall [--purge-config]
 set -euo pipefail
@@ -173,37 +173,8 @@ _strip_hooks() {
         || _warn "Could not strip hooks.json automatically. Remove '${BUCKLER_HOOK_PREFIX}'* entries manually."
 }
 
-# ── Legacy migration ───────────────────────────────────────────────────────────
-_purge_legacy() {
-    local hooks_json
-    hooks_json="$(_cursor_hooks_json)"
-    [[ -f "$hooks_json" ]] || return 0
-    _info "Removing legacy rethunk-mcp-nudge.py hook entries (active hook prefix: ${BUCKLER_HOOK_PREFIX})..."
-    python3 - "$hooks_json" <<'PYEOF'
-import json, sys
-path = sys.argv[1]
-with open(path) as f:
-    data = json.load(f)
-hooks = data.get("hooks", [])
-before = len(hooks)
-hooks = [h for h in hooks if "rethunk-mcp-nudge" not in str(h.get("command", ""))]
-removed = before - len(hooks)
-data["hooks"] = hooks
-with open(path, "w") as f:
-    json.dump(data, f, indent=2)
-    f.write("\n")
-if removed:
-    print(f"[buckler] Removed {removed} legacy rethunk-mcp-nudge entries.")
-PYEOF
-}
-
 # ── Subcommands ───────────────────────────────────────────────────────────────
 cmd_install() {
-    local purge_legacy=0
-    for arg in "$@"; do
-        [[ "$arg" == "--purge-legacy" ]] && purge_legacy=1
-    done
-
     _require curl "Install curl from your package manager."
     _require uv "Install uv: https://docs.astral.sh/uv/getting-started/installation/"
     _require cosign "Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/"
@@ -226,8 +197,6 @@ cmd_install() {
     _setup_venv "$install_dir"
     _set_current "$version"
     _merge_hooks
-
-    [[ "$purge_legacy" -eq 1 ]] && _purge_legacy
 
     _ok "Buckler ${version} installed. Restart Cursor to activate."
     _info "Verify: $(_venv_python) -m buckler --version"
@@ -310,7 +279,6 @@ main() {
         *)
             printf 'Usage: bash setup.sh <install|update|uninstall> [options]\n\n'
             printf 'Options:\n'
-            printf '  install   --purge-legacy    Remove legacy rethunk-mcp-nudge.py hook entries\n'
             printf '  uninstall --purge-config    Also remove $XDG_CONFIG_HOME/buckler/\n\n'
             printf 'Environment:\n'
             printf '  BUCKLER_VERSION    Pin a specific release tag (default: latest)\n'
