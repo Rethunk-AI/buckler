@@ -2,7 +2,7 @@
 
 ## Overview
 
-Fix `_buckler_command` in `src/buckler/hooks.py` so the generated `hooks.json` `command` string quotes the interpreter path correctly on Unix (`shlex.quote`) and Windows (`subprocess.list2cmdline` semantics). Add regression tests for paths with spaces and edge quotes; document the contract in `docs/adapters/cursor.md` and `docs/paths.md`.
+Fix `_buckler_command` in `src/buckler/hooks.py` so the generated `hooks.json` `command` string quotes the interpreter path with POSIX **`shlex.quote` on all platforms** (bash / Git Bash on Windows). Add regression tests for paths with spaces and edge quotes; document the contract in `docs/adapters/cursor.md` and `docs/paths.md`.
 
 ## Preconditions
 
@@ -12,13 +12,13 @@ Fix `_buckler_command` in `src/buckler/hooks.py` so the generated `hooks.json` `
 
 ### Implementation
 
-- Centralize platform-specific quoting helper using `buckler.paths._is_windows()`.
+- Centralize `_quote_hook_interpreter` using `shlex.quote` (no Windows/cmd split).
 - Always quote `venv_python` and `sys.executable` fallback per Q3.
 - Optionally detect newline in path and error clearly per Q4.
 
 ### Tests
 
-- Extend `tests/test_hooks.py::TestHooks::test_buckler_command_*` with Linux/macOS and Windows-mocked cases; edge cases for embedded quotes.
+- Extend `tests/test_hooks.py::TestHooks` with parametrized paths (spaces, embedded quotes, `C:/...` forms); round-trip via `shlex.split(..., posix=True)`.
 - Add round-trip test: write JSON, parse `command` field, recover `argv[0]`.
 
 ### Docs
@@ -32,7 +32,7 @@ Fix `_buckler_command` in `src/buckler/hooks.py` so the generated `hooks.json` `
 
 ## Risks
 
-- Cursor command parsing assumptions — stick to cmd.exe-style on Windows per Q1.
+- Cursor invokes hooks with bash / Git Bash posture on Windows — POSIX quoting only.
 - Over-quoting `-m buckler` tokens — keep suffix bare per Q2.
 
 ## Verification

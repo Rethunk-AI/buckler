@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | IN_PROGRESS 051200ZMAY26 |
+| Status | DONE 051200ZMAY26 — POSIX `shlex.quote` for interpreter path in hooks.json; newline/CR refusal; tests + cursor/paths docs. |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. `_buckler_command` in `src/buckler/hooks.py:48` builds the `hooks.json` `command` field by direct f-string concatenation of an unquoted `Path` and the literal `" -m buckler --driver cursor"`. Any whitespace in the venv-Python path silently breaks Cursor's command parsing. |
@@ -25,22 +25,20 @@ CI doesn't catch this because every GitHub Actions runner uses space-free paths.
 
 ### Quoting in `_buckler_command`
 
-- On Unix (Linux / macOS): wrap `venv_python` with `shlex.quote(str(venv_python))` before concatenation.
-- On Windows: wrap `venv_python` with `subprocess.list2cmdline([str(venv_python)])` (or equivalent: double-quote, escape inner `"` as `\"`, escape trailing backslashes per the cmd.exe rules). The `-m buckler --driver cursor` portion stays bare — those tokens have no whitespace.
-- The platform detection reuses `buckler.paths._is_windows()` to stay consistent with the rest of the package.
+- On **all** platforms (Linux, macOS, Windows / Git Bash): wrap the interpreter path with **`shlex.quote(str(path))`** before concatenating the fixed tail. No separate `cmd.exe` / `list2cmdline` branch — Buckler assumes bash / Git Bash parses the hook command string on Windows.
+- The `-m buckler --driver cursor` portion stays **bare** — those tokens have no whitespace (Q2).
 
 ### Tests
 
-- New parametrize rows in `tests/test_hooks.py::TestHooks::test_buckler_command_*`:
-  - Linux/macOS: `Path("/home/joe smith/.local/share/buckler/.../python")` → command starts with `'/home/joe smith/.local/share/buckler/.../python'` (single-quoted) followed by `' -m buckler --driver cursor'`.
-  - Windows: `Path("C:/Users/Damon Blais/.../python.exe")` → command starts with `"C:\Users\Damon Blais\...\python.exe"` (double-quoted) followed by `" -m buckler --driver cursor"`.
+- New parametrize rows in `tests/test_hooks.py::TestHooks`:
+  - Paths with spaces (Unix-style and `C:/Users/...` forms) — `shlex.split(..., posix=True)` recovers `argv[0]`.
   - Edge: path containing a single quote (Linux) or a literal `"` (Windows) — assert the round-trip survives.
-- An end-to-end test that writes a generated `hooks.json` and asserts it parses as valid JSON whose `command` field, when split by `shlex.split` (Unix) or `subprocess.list2cmdline`-inverse (Windows), recovers the original interpreter path as `argv[0]`.
+- An end-to-end test that writes a generated `hooks.json` and asserts the `command` field parses with `shlex.split(..., posix=True)` and recovers the original interpreter path as `argv[0]`.
 
 ### Documentation
 
-- `docs/adapters/cursor.md` "hooks.json wiring" section gains a one-paragraph note: "the `command` field is a shell command string, not an argv array; Buckler quotes the interpreter path for the host platform. Operators editing `hooks.json` by hand must do the same."
-- `docs/paths.md` cross-references this in the section that mentions `pathlib.Path.as_posix()` for `hooks.json` entries — the existing wording promises Windows handling but doesn't actually deliver it.
+- `docs/adapters/cursor.md` "hooks.json wiring" section: the `command` field is a shell command string, not an argv array; Buckler applies POSIX `shlex.quote` to the interpreter path. Operators editing `hooks.json` by hand must do the same.
+- `docs/paths.md` documents that `hooks.json` interpreter paths are POSIX-quoted and may appear in native or `as_posix()` form from `pathlib`.
 
 ## Out of scope
 
@@ -62,7 +60,7 @@ CI doesn't catch this because every GitHub Actions runner uses space-free paths.
 
 - A1. `_buckler_command(Path("/home/joe smith/.../python"))` returns a string that, when parsed by `shlex.split`, yields `argv[0] == "/home/joe smith/.../python"`.
 - A2. `_buckler_command(Path("C:/Users/Damon Blais/.../python.exe"))` returns a string that, when parsed by `shlex.split(..., posix=True)` (Git Bash / bash posture), yields `argv[0] == "C:/Users/Damon Blais/.../python.exe"` (path string equality; drive-letter form preserved as passed in).
-- A3. Test fixture covers Linux, macOS (same code path as Linux), and Windows (mocked) with paths containing spaces.
+- A3. Test fixture covers paths with spaces (Unix-style and `C:/...` forms) and embedded quotes; same code path for Linux/macOS/Windows strings.
 - A4. End-to-end test writes a `hooks.json` and re-parses the generated command field round-trip.
 - A5. `docs/adapters/cursor.md` documents the quoting contract.
 - A6. `docs/paths.md` reference is removed or made accurate (whichever fits the implementation).

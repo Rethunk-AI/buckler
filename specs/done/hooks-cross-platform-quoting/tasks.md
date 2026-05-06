@@ -1,6 +1,6 @@
 # Tasks — hooks-cross-platform-quoting
 
-Status: IN_PROGRESS (claimed Bastion)
+Status: DONE 051200ZMAY26
 
 ## P0
 
