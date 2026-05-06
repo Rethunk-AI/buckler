@@ -47,6 +47,16 @@ class TestCLIInProcess:
         data = json.loads(_call_main([], stdin_json=payload))
         assert data["permission"] == "allow"
 
+    def test_cursor_bypass_env_allows_commit(self):
+        """RETHUNK_ALLOW_SHELL=1 is forwarded into PolicyInput so bypass rules apply."""
+        payload = {
+            "hook_event_name": "beforeShellExecution",
+            "shell_command": "git commit -m 'bypass'",
+            "cwd": "/project",
+        }
+        data = json.loads(_call_main([], stdin_json=payload, env={"RETHUNK_ALLOW_SHELL": "1"}))
+        assert data["permission"] == "allow"
+
     def test_cursor_policy_version_mismatch_returns_deny_json(self):
         payload = {
             "hook_event_name": "beforeShellExecution",

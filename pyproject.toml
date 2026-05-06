@@ -46,7 +46,7 @@ path = "src/buckler/__init__.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["-ra", "--strict-markers"]
+addopts = ["-ra", "--strict-markers", "--cov=src/buckler", "--cov-fail-under=100"]
 
 [tool.coverage.run]
 omit = ["src/buckler/__main__.py"]

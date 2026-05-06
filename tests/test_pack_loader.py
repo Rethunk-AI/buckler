@@ -202,3 +202,44 @@ class TestValidatePackFiles:
 
         errs = validate_pack_files(packs_dir=packs, user_rules_dir=rules)
         assert any("rules' must be a list" in e for e in errs)
+
+    def test_validate_skips_nonexistent_directories(self, tmp_path: Path):
+        """Missing --packs-dir or --rules-dir targets are a no-op, not an error."""
+        from buckler.pack_loader import validate_pack_files
+
+        missing_packs = tmp_path / "no_such_packs"
+        rules = tmp_path / "rules.d"
+        rules.mkdir()
+        assert validate_pack_files(packs_dir=missing_packs, user_rules_dir=rules) == []
+
+        packs = tmp_path / "packs_ok"
+        packs.mkdir()
+        missing_rules = tmp_path / "no_rules_d"
+        assert validate_pack_files(packs_dir=packs, user_rules_dir=missing_rules) == []
+
+    def test_validate_reports_file_level_yaml_error(self, tmp_path: Path):
+        """A .yaml file that cannot be parsed at all surfaces as one error string."""
+        packs = tmp_path / "packs"
+        packs.mkdir()
+        (packs / "broken.yaml").write_text("pack: broken\n  rules: [\n")
+        rules = tmp_path / "rules.d"
+        rules.mkdir()
+        from buckler.pack_loader import validate_pack_files
+
+        errs = validate_pack_files(packs_dir=packs, user_rules_dir=rules)
+        assert errs
+        assert any("Failed to load pack" in e and "broken.yaml" in e for e in errs)
+
+    def test_validate_reports_non_mapping_rule_entry(self, tmp_path: Path):
+        """Rules list entries must be mappings; a plain scalar is rejected."""
+        packs = tmp_path / "packs"
+        packs.mkdir()
+        (packs / "scalar_rule.yaml").write_text(
+            "pack: bad\nversion: '1'\nrules:\n  - not-a-mapping-entry\n"
+        )
+        rules = tmp_path / "rules.d"
+        rules.mkdir()
+        from buckler.pack_loader import validate_pack_files
+
+        errs = validate_pack_files(packs_dir=packs, user_rules_dir=rules)
+        assert any("each rule must be a mapping" in e for e in errs)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from unittest import mock
 
@@ -319,6 +320,36 @@ class TestCorePolicyValidation:
         text = log_path.read_text(encoding="utf-8")
         assert "decision=allow" in text
         assert "trigger=pre_shell_exec" in text
+
+    def test_audit_log_write_failure_does_not_abort_evaluate(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ):
+        """If the state directory cannot be written, policy outcome is still returned."""
+        cfg_home = tmp_path / "cfg"
+        state_home = tmp_path / "state"
+        cfg_home.mkdir()
+        state_home.mkdir()
+        (cfg_home / "config.toml").write_text('[core]\naudit_log = true\ntier = "baseline"\n')
+        monkeypatch.setenv("BUCKLER_CONFIG_HOME", str(cfg_home))
+        monkeypatch.setenv("BUCKLER_STATE_HOME", str(state_home))
+        state_home.chmod(0o000)
+        try:
+            with caplog.at_level(logging.WARNING, logger="buckler.core"):
+                result = evaluate(
+                    {
+                        "policy_io_version": "1",
+                        "trigger": "pre_shell_exec",
+                        "shell": {"command": "git status", "cwd": "/p"},
+                        "env": {},
+                    }
+                )
+            assert result["decision"] == "allow"
+            assert any("Audit log write failed" in r.message for r in caplog.records), caplog.text
+        finally:
+            state_home.chmod(0o700)
 
     def test_evaluate_rejects_wrong_policy_io_version(self):
         from buckler.core import PolicyError, evaluate
