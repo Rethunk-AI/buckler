@@ -59,11 +59,11 @@ The troubleshooting flow is one of the most common operator questions for any po
 
 | Q | Proposal | Status |
 |---|----------|--------|
-| Q1 | Should troubleshooting live at `docs/troubleshooting.md` (matches existing `docs/` convention) or `TROUBLESHOOTING.md` at root (matches `SECURITY.md`, `CONTRIBUTING.md`)? Proposal: **`docs/troubleshooting.md`** — keeps root tier-clean per `doc-audit` governance. | **Open** |
-| Q2 | Audit-log rotation — should Buckler ship its own rotation later, or stay operator-owned forever? Proposal: **operator-owned** — matches the v1 "local tool only" framing in `SECURITY.md`; one less moving part. | **Open** |
-| Q3 | SIEM forwarding example: UDP syslog (`nc syslog 514`) vs. modern (Vector / Fluent Bit). Proposal: **show the minimal logrotate snippet + one-line `tail -F` syslog example, link out** for the modern stack. Don't lock in. | **Open** |
-| Q4 | Should the troubleshooting doc describe a `BUCKLER_DEBUG=1` env var to dump the raw Cursor JSON? Proposal: **defer** — no such env var exists today; would require a code change. Mention "manually capture the JSON by adding a wrapper hook" instead. | **Open** |
-| Q5 | Cross-link from `cursor-skill/buckler/SKILL.md` (the agent skill) — add now or wait until the troubleshooting doc has lived a release? Proposal: **add now** so agents asked "buckler isn't blocking my commit" land on the troubleshooting page. | **Open** |
+| Q1 | Should troubleshooting live at `docs/troubleshooting.md` (matches existing `docs/` convention) or `TROUBLESHOOTING.md` at root (matches `SECURITY.md`, `CONTRIBUTING.md`)? Proposal: **`docs/troubleshooting.md`** — keeps root tier-clean per `doc-audit` governance. | **Ratified 051600ZMAY26** — **`docs/troubleshooting.md`** |
+| Q2 | Audit-log rotation — should Buckler ship its own rotation later, or stay operator-owned forever? Proposal: **operator-owned** — matches the v1 "local tool only" framing in `SECURITY.md`; one less moving part. | **Ratified 051600ZMAY26** — **operator-owned** |
+| Q3 | SIEM forwarding example: UDP syslog (`nc syslog 514`) vs. modern (Vector / Fluent Bit). Proposal: **show the minimal logrotate snippet + one-line `tail -F` syslog example, link out** for the modern stack. Don't lock in. | **Ratified 051600ZMAY26** — **minimal + link out** |
+| Q4 | Should the troubleshooting doc describe a `BUCKLER_DEBUG=1` env var to dump the raw Cursor JSON? Proposal: **defer** — no such env var exists today; would require a code change. Mention "manually capture the JSON by adding a wrapper hook" instead. | **Ratified 051600ZMAY26** — **defer** (wrapper hook documented) |
+| Q5 | Cross-link from `cursor-skill/buckler/SKILL.md` (the agent skill) — add now or wait until the troubleshooting doc has lived a release? Proposal: **add now** so agents asked "buckler isn't blocking my commit" land on the troubleshooting page. | **Ratified 051600ZMAY26** — **add now** |
 
 ## Acceptance
 
