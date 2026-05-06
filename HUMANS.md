@@ -173,6 +173,37 @@ audit_log = false
 
 ---
 
+## Audit log operations
+
+**Append-only contract.** Buckler only appends to the audit file (default `~/.local/state/buckler/audit.log` when `audit_log = true` in `config.toml`). It does not rotate, truncate, or compress the file. **Rotation and retention are operator-owned** for v1: Buckler is a local tool and does not ship a log daemon.
+
+**Rotation (Linux).** Use your platform scheduler with `logrotate(8)`. Example `/etc/logrotate.d/buckler` fragment (adjust user and path):
+
+```
+~/.local/state/buckler/audit.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+```
+
+**Rotation (macOS / Windows).** Buckler does not integrate with Apple Log or Windows Event Log. Roll your own (for example `cron` plus `mv` to a dated file). Buckler opens the log with append mode on each write, so after rotation the next audit line creates a fresh file if the path was moved away.
+
+**Forwarding to a SIEM.** One minimal pattern is stream the file to syslog over UDP (replace host/port with your collector):
+
+```bash
+tail -F ~/.local/state/buckler/audit.log | nc -u syslog.example.com 514
+```
+
+For production pipelines, use whatever you already run (Vector, Fluent Bit, rsyslog, cloud logging agents, etc.); Buckler does not mandate a vendor.
+
+**Redaction.** Each line records the raw shell `command` from the harness (see contract docs). Buckler does **not** redact secrets. If commands may contain sensitive values, filter or sample at the forwarder or SIEM; treat the log like any other shell-audit stream.
+
+---
+
 ## Troubleshooting
 
 ### Hook not firing

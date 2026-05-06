@@ -9,9 +9,21 @@ Buckler protects against **unintended agentic shell actions**. Its threat model 
 | Agent runs `git commit` unilaterally | `agent-git` pack denies by default |
 | Agent force-pushes or deletes remote branches | Deny rules on `--force`, `-f`, `--delete`, `--mirror`, `:branch` push |
 | Agent removes or rewrites a remote | Deny rules on `git remote remove`, configurable on `set-url` |
-| Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; `bash -c` string recursion in pack parser (phase 2) |
+| Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; see [Known parser bypasses (status)](#known-parser-bypasses-status) (not all shell-escape families are closed yet) |
 | Tampered release artifact | Cosign keyless verification in `setup.sh` before any extraction |
 | Malicious user rules | Rules run in the same process as Buckler; no sandbox. User rules are trusted. |
+
+### Known parser bypasses (status)
+
+The `agent-git` pack's shell parser is **not** a full POSIX `bash` implementation. The table below lists **unmitigated** bypass classes that an agent can use today; see the remediation spec for the full matrix and test plan. When a class is fixed in a release, the row is marked **closed** with that version and a matching entry is added to `CHANGELOG.md`.
+
+| Bypass class | Status | Remediation / tracking |
+|--------------|--------|------------------------|
+| `&` (background) — e.g. `git status & git commit` | open | [specs/active/parser-bypass-hardening/spec.md](specs/active/parser-bypass-hardening/spec.md) |
+| Shell pipe between commands (see remediation spec for examples) | open | [specs/active/parser-bypass-hardening/spec.md](specs/active/parser-bypass-hardening/spec.md) |
+| Command substitution `$(…)` and backticks | open | same |
+| `bash -c` / `sh -c` string not recursed | open | same (see also threat row above) |
+| Env prefix / `env` — e.g. `FOO=bar git commit`, `env … git commit` | open | same |
 
 ### V1 scope (local-only)
 
