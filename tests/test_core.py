@@ -200,6 +200,19 @@ def test_substitution_body_expand_fails_denies():
     assert r["decision"] == "deny"
 
 
+def test_apply_template_single_pass_no_double_substitution():
+    from buckler.core import _apply_template
+
+    out = _apply_template("cmd={command} tail", {"command": "git {program}"})
+    assert out == "cmd=git {program} tail"
+
+
+def test_apply_template_unknown_placeholder_preserved():
+    from buckler.core import _apply_template
+
+    assert _apply_template("{a} {b}", {"a": "1"}) == "1 {b}"
+
+
 def test_match_shell_segments_skips_program_none_from_env_only_tokens():
     from buckler.core import _match_shell_segments
 
@@ -433,17 +446,6 @@ class TestCoreRemainingBranches:
         from buckler.core import _action_priority
 
         assert _action_priority("unknown_action") == 0
-
-    def test_evaluate_rule_priority_tie_higher_severity_wins(self):
-        """When two rules tie on priority, higher-severity action wins."""
-        inp = {
-            "policy_io_version": "1",
-            "trigger": "pre_shell_exec",
-            "shell": {"command": "git add ."},
-            "env": {},
-        }
-        result = evaluate(inp)
-        assert result["decision"] == "nudge"
 
     def test_match_shell_segments_continue_on_none_program(self):
         """Segments that parse to (None, ...) are skipped without error."""

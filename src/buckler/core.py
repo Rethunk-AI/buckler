@@ -503,12 +503,17 @@ def _action_priority(action: str) -> int:
     return {"deny": 4, "ask": 3, "nudge": 2, "allow": 1}.get(action, 0)
 
 
+class _TemplateContext(dict[str, str]):
+    """Single-pass template fill: values cannot re-trigger placeholder substitution."""
+
+    def __missing__(self, key: str) -> str:
+        return "{" + key + "}"
+
+
 def _apply_template(template: str | None, context: dict[str, str]) -> str | None:
     if template is None:
         return None
-    for key, val in context.items():
-        template = template.replace(f"{{{key}}}", val)
-    return template
+    return template.format_map(_TemplateContext(context))
 
 
 def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
