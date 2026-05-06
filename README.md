@@ -32,6 +32,7 @@ Buckler is a **harness-neutral** policy engine: declarative YAML rules evaluate 
 | **Architecture & adapter boundary** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | **Commit conventions, CI, dev setup** | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | **Threat model, Cosign verification, disclosure** | [SECURITY.md](SECURITY.md) |
+| **Troubleshooting (hooks, policy, audit log)** | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Rule YAML schema | [docs/rule-schema.md](docs/rule-schema.md) |
 | Default `agent-git` pack matrix | [docs/agent-git.md](docs/agent-git.md) |
 | Path resolution (XDG, Windows, env overrides) | [docs/paths.md](docs/paths.md) |

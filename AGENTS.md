@@ -16,6 +16,7 @@ LLM + dev orientation. **This file is intentionally thin** — it points at the 
 | Default Git pack operator matrix | [docs/agent-git.md](docs/agent-git.md) |
 | Dev setup, commit conventions, MCP policy, CI | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Threat model, Cosign verification, vulnerability reporting | [SECURITY.md](SECURITY.md) |
+| Troubleshooting runbook (hooks, policy, audit log) | [docs/troubleshooting.md](docs/troubleshooting.md) |
 
 ## Contract-change rules
 
