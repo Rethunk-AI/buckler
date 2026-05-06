@@ -99,9 +99,12 @@ uv run ruff format --check src/ tests/
 
 GitHub Actions runs on push and pull requests:
 
-- `ci.yml`: `ubuntu-latest`, `macos-latest`, `windows-latest` (Git Bash); `uv sync`; `pytest`; `ruff`.
-- `ci.yml` also runs `shellcheck` (or `bash -n`) on `scripts/setup.sh`.
-- `release.yml`: triggered on version tags; runs the same ruff, format, and mypy gates as `ci.yml`, then `pytest`; builds a tarball, signs with Cosign keyless, attaches to the GitHub Release.
+- **`ci.yml` `test` job:** mixes OS and Python intentionally — **`ubuntu-latest`** runs **Python 3.11, 3.12, and 3.13** (full minor coverage). **`macos-latest`** and **`windows-latest`** each run **one** representative cell (**Python 3.13**) so we keep cross-platform signal without tripling macOS/Windows minutes.
+- The **`shellcheck`** job runs `shellcheck --shell=bash --severity=warning scripts/setup.sh` with **no** `continue-on-error`; warnings fail the workflow.
+- **Maintainers:** periodically prove the shellcheck gate is live — push a one-commit branch or draft PR that introduces a deliberate `shellcheck` warning in `scripts/setup.sh`, confirm the **`shellcheck`** job turns red on GitHub Actions, then drop/revert the branch. Locally you can run the same command as CI; exit code must be non-zero when the script violates Shellcheck at `--severity=warning`.
+- **`release.yml`:** triggered on version tags; runs the same ruff, format, and mypy gates as `ci.yml`, then `pytest`; builds a tarball, signs with Cosign keyless, attaches to the GitHub Release.
+
+Python versions declared under `Programming Language :: Python :: …` in `pyproject.toml` are checked against `.github/workflows/ci.yml` by `tests/test_ci_matrix_coherence.py`.
 
 ## Pull request checklist
 
