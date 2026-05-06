@@ -6,7 +6,7 @@
 
 | Slug | State | DTG | Owner |
 |------|-------|-----|-------|
-| ci-hygiene | DRAFT | 060431ZMAY26 | Bastion (J-3) |
+| ci-hygiene | IN_PROGRESS | 060452ZMAY26 | Bastion (J-3) |
 | code-quality-sweep | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | docs-and-runbooks | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | hooks-cross-platform-quoting | DRAFT | 060431ZMAY26 | Bastion (J-3) |
@@ -29,3 +29,4 @@
 | Slug | DTG | Note |
 |------|-----|------|
 | _(none)_ | | |
+

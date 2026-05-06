@@ -1,6 +1,6 @@
 # Tasks — ci-hygiene
 
-Status: DRAFT 060431ZMAY26
+Status: IN_PROGRESS 060452ZMAY26 — Bastion (J-3) claims execution
 
 ## P0
 
