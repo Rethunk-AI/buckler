@@ -1,7 +1,5 @@
 # HUMANS.md — Buckler Operator Guide
 
-This file is for **operators**: developers who install Buckler, configure packs, and troubleshoot hook behavior. For architecture and contribution, see [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## Install
 
 ### Prerequisites

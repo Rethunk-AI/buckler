@@ -32,9 +32,4 @@ When you change a contract, update **all** canon locations:
 
 ## Development workflow
 
-All implementation work follows [CONTRIBUTING.md](CONTRIBUTING.md). Key requirements:
-
-- **Commits via `user-rethunk-git` / `batch_commit`** (MCP). Do not use raw shell `git commit`.
-- **Small thematic batches** — one commit per logical unit; ≤ ~7 paths.
-- **Conventional Commits** subject lines, imperative mood, ≤ 72 chars.
-- **Stop if MCP unavailable** — do not silently fall back to shell git.
+All implementation work — commit conventions, CI steps, MCP policy, and the stop-if-MCP-unavailable rule — is in [CONTRIBUTING.md](CONTRIBUTING.md).
