@@ -126,12 +126,12 @@ def load_config() -> dict[str, Any]:
         return defaults
     try:
         import tomllib  # stdlib on Python 3.11+
-    except ImportError:
-        try:
-            import tomli as tomllib  # type: ignore[no-redef]  # backport for < 3.11
-        except ImportError:
-            log.warning("tomllib not available; using default config")
-            return defaults
+    except ImportError:  # pragma: no cover
+        try:  # pragma: no cover
+            import tomli as tomllib  # type: ignore[no-redef]  # backport for < 3.11  # pragma: no cover
+        except ImportError:  # pragma: no cover
+            log.warning("tomllib not available; using default config")  # pragma: no cover
+            return defaults  # pragma: no cover
     try:
         with cfg_file.open("rb") as f:
             data = tomllib.load(f)
