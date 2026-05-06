@@ -28,6 +28,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
+      - name: Lint (ruff)
+        run: uv run ruff check src/ tests/
+
+      - name: Format check (ruff)
+        run: uv run ruff format --check src/ tests/
+
+      - name: Type check (mypy)
+        run: uv run mypy src/buckler/
+
       - name: Run tests (gate)
         run: uv run pytest tests/ -q
 
@@ -53,7 +62,7 @@ jobs:
             --transform "s|^|buckler-${VERSION}/|" \
             src/ packs/ scripts/ docs/ \
             pyproject.toml uv.lock LICENSE README.md HUMANS.md AGENTS.md \
-            CONTRIBUTING.md SECURITY.md ARCHITECTURE.md
+            CONTRIBUTING.md SECURITY.md ARCHITECTURE.md CHANGELOG.md
           echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
 
       - name: Install Cosign
