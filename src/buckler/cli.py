@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-from buckler import __version__
+from buckler import __version__, adapters
 from buckler.adapters import cursor as cursor_adapter
 from buckler.core import PolicyError, evaluate
 from buckler.pack_loader import validate_pack_files
@@ -29,7 +29,11 @@ log = logging.getLogger(__name__)
 
 
 def _load_json_from(source: str | None) -> dict[str, Any]:
-    raw = sys.stdin.read() if source is None or source == "-" else Path(source).read_text()
+    raw = (
+        sys.stdin.read()
+        if source is None or source == "-"
+        else Path(source).read_text(encoding="utf-8")
+    )
     try:
         return cast("dict[str, Any]", json.loads(raw))
     except json.JSONDecodeError as e:
@@ -42,7 +46,7 @@ def _write_json_to(dest: str | None, data: dict[str, Any]) -> None:
     if dest is None or dest == "-":
         print(out)
     else:
-        Path(dest).write_text(out + "\n")
+        Path(dest).write_text(out + "\n", encoding="utf-8")
 
 
 def _policy_error_cursor_response(msg: str) -> dict[str, Any]:
@@ -100,7 +104,7 @@ def main() -> None:
     parser.add_argument(
         "--driver",
         default=os.environ.get("BUCKLER_DRIVER", "cursor"),
-        choices=["cursor"],
+        choices=list(adapters.__all__),
         help="Harness adapter to use (default: cursor or $BUCKLER_DRIVER)",
     )
 
