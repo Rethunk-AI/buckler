@@ -34,12 +34,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "jsonschema", specifier = ">=4.22" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
+    { name = "jsonschema", specifier = ">=4.25" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.20" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
 ]
 provides-extras = ["dev"]
