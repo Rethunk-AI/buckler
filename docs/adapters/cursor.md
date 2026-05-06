@@ -194,3 +194,5 @@ For `postToolUse` hooks, Cursor doesn't use a `permission` field. Instead, the a
 ```
 
 The `command` path is an absolute path to the Buckler venv Python, set by `setup.sh` based on `buckler.paths.current_dir()`.
+
+The `command` field is a **shell command string** (not a JSON argv array). Buckler wraps the interpreter path with **POSIX `shlex.quote`** on every platform so paths with spaces and shell metacharacters work when Cursor runs the hook under bash / **Git Bash** on Windows. The fixed tail ` -m buckler --driver cursor` is left unquoted (no whitespace in those tokens). If you edit `hooks.json` by hand, quote the interpreter path the same way or the hook may fail to launch with no audit trail.

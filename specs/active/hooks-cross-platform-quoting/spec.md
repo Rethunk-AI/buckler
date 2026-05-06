@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | DRAFT 060431ZMAY26 |
+| Status | IN_PROGRESS 051200ZMAY26 |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. `_buckler_command` in `src/buckler/hooks.py:48` builds the `hooks.json` `command` field by direct f-string concatenation of an unquoted `Path` and the literal `" -m buckler --driver cursor"`. Any whitespace in the venv-Python path silently breaks Cursor's command parsing. |
@@ -53,15 +53,15 @@ CI doesn't catch this because every GitHub Actions runner uses space-free paths.
 
 | Q | Proposal | Status |
 |---|----------|--------|
-| Q1 | On Windows, double-quote with `\"` escaping (matching `subprocess.list2cmdline`) versus PowerShell-style backtick escaping. Proposal: **`subprocess.list2cmdline`**. Cursor on Windows runs the command through cmd.exe-style parsing, not PowerShell. | **Open** |
-| Q2 | Should the `-m buckler --driver cursor` portion also be quoted (defensive), or left bare? Proposal: **bare** — these are fixed tokens with no whitespace, and quoting them adds noise that humans editing `hooks.json` will trip on. | **Open** |
-| Q3 | When `venv_python` is `None` and we fall back to `sys.executable`, apply the same quoting? Proposal: **yes, unconditionally**. The fallback path also encounters spaces. | **Open** |
-| Q4 | If a user's path contains a literal newline (rare but legal on Unix), refuse to write `hooks.json` rather than try to escape — `\n` in a `hooks.json` command field is broken regardless. Proposal: **refuse with a clear error message**. | **Open** |
+| Q1 | Windows quoting model: Buckler targets **Git Bash** on Windows. Proposal: use POSIX **`shlex.quote`** for the interpreter path on **all** platforms so the `hooks.json` `command` string parses under bash / Git Bash. | **Ratified 051200ZMAY26** — **POSIX `shlex.quote` everywhere** |
+| Q2 | Should the `-m buckler --driver cursor` portion also be quoted (defensive), or left bare? Proposal: **bare** — these are fixed tokens with no whitespace, and quoting them adds noise that humans editing `hooks.json` will trip on. | **Ratified 051200ZMAY26** — **bare** |
+| Q3 | When `venv_python` is `None` and we fall back to `sys.executable`, apply the same quoting? Proposal: **yes, unconditionally**. The fallback path also encounters spaces. | **Ratified 051200ZMAY26** — **yes** |
+| Q4 | If a user's path contains a literal newline (rare but legal on Unix), refuse to write `hooks.json` rather than try to escape — `\n` in a `hooks.json` command field is broken regardless. Proposal: **refuse with a clear error message**. | **Ratified 051200ZMAY26** — **refuse** (also **CR**); `ValueError` |
 
 ## Acceptance
 
 - A1. `_buckler_command(Path("/home/joe smith/.../python"))` returns a string that, when parsed by `shlex.split`, yields `argv[0] == "/home/joe smith/.../python"`.
-- A2. `_buckler_command(Path("C:/Users/Damon Blais/.../python.exe"))` (with `_is_windows()` mocked True) returns a string that, when parsed by Windows command-line rules, yields `argv[0] == "C:\\Users\\Damon Blais\\...\\python.exe"`.
+- A2. `_buckler_command(Path("C:/Users/Damon Blais/.../python.exe"))` returns a string that, when parsed by `shlex.split(..., posix=True)` (Git Bash / bash posture), yields `argv[0] == "C:/Users/Damon Blais/.../python.exe"` (path string equality; drive-letter form preserved as passed in).
 - A3. Test fixture covers Linux, macOS (same code path as Linux), and Windows (mocked) with paths containing spaces.
 - A4. End-to-end test writes a `hooks.json` and re-parses the generated command field round-trip.
 - A5. `docs/adapters/cursor.md` documents the quoting contract.

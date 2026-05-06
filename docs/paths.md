@@ -28,7 +28,7 @@ Git Bash exposes Windows Known Folder paths as Unix-style env vars:
 | Config, user rules | `BUCKLER_CONFIG_HOME` | `$APPDATA/Buckler` | `C:\Users\you\AppData\Roaming\Buckler` |
 | Audit log, state | `BUCKLER_STATE_HOME` | `$LOCALAPPDATA/Buckler/state` | `C:\Users\you\AppData\Local\Buckler\state` |
 
-`buckler.paths` normalizes Windows paths via `pathlib.Path` before writing to `hooks.json` (Cursor on Windows requires native backslash paths or forward-slash paths—we use `pathlib.Path.as_posix()` for `hooks.json` entries).
+`buckler.paths` normalizes Windows paths via `pathlib.Path` before writing to `hooks.json`. The interpreter path in the `command` field is **POSIX-quoted** (`shlex.quote`) for bash / Git Bash; the path may appear in native or `as_posix()` form depending on resolution, but it is always safe for spaces and shell metacharacters once quoted.
 
 ## Directory layout
 

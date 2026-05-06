@@ -1,20 +1,19 @@
 # Tasks — hooks-cross-platform-quoting
 
-Status: DRAFT 060431ZMAY26
+Status: IN_PROGRESS (claimed Bastion)
 
 ## P0
 
-- [ ] [HUMAN] Ratify Q1–Q4 (Windows list2cmdline, bare `-m` tail, fallback quoting, newline handling).
-- [ ] Implement quoted `_buckler_command` using `shlex.quote` (Unix) and Windows rules per Q1; apply to `sys.executable` fallback (Q3).
-- [ ] Refuse or escape paths with embedded newline per Q4 if ratified.
-- [ ] Add parametrize / fixture tests for spaces and quote edge cases; round-trip `hooks.json` test (A3–A4).
-- [ ] Update `docs/adapters/cursor.md` and `docs/paths.md` (A5–A6).
-- [ ] Maintain 100% coverage (A7).
-- [ ] Ratify Q-table (A8).
+- [x] [HUMAN] Ratify Q1–Q4 (POSIX `shlex.quote` everywhere incl. Windows/Git Bash, bare `-m` tail, fallback quoting, refuse newline/CR).
+- [x] Implement quoted `_buckler_command` via `shlex.quote` + newline refusal (Q4).
+- [x] Add parametrize / fixture tests for spaces and quote edge cases; round-trip `hooks.json` test (A3–A4).
+- [x] Update `docs/adapters/cursor.md` and `docs/paths.md` (A5–A6).
+- [x] Maintain 100% coverage (A7).
+- [x] Q-table ratified (A8).
 
 ## P1
 
-- [ ] Add brief comment in `hooks.py` pointing to docs for maintainers.
+- [x] Brief comment in `hooks.py` (`_HOOK_CMD_SUFFIX` / `_quote_hook_interpreter` docstrings).
 
 ## P2
 
