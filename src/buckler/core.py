@@ -32,8 +32,9 @@ _GIT_GLOBAL_FLAGS = frozenset(
 # gh(1) global flags that take a following argument (before the command word).
 _GH_GLOBAL_OPTS_WITH_ARG = frozenset({"-R", "--repo", "-h", "--hostname"})
 
-# Shell segment boundary patterns (unquoted)
-_SEGMENT_BOUNDARY = re.compile(r"\s*(?:&&|\|\||;)\s*")
+_SHELL_WRAPPERS = frozenset({"bash", "sh", "dash"})
+_MAX_POLICY_EXPAND_DEPTH = 3
+_ENV_ASSIGN_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 
 class PolicyError(Exception):
@@ -77,8 +78,8 @@ def _write_audit_decision(
         log.warning("Audit log write failed: %s", e)
 
 
-def _segment_command(command: str) -> list[str]:
-    """Split a shell command on &&, ||, ; respecting single and double quotes."""
+def _segment_command(command: str) -> list[str]:  # noqa: PLR0912, PLR0915
+    """Split a shell command on &&, ||, ;, &, |, and newlines (not inside quotes)."""
     segments: list[str] = []
     current = ""
     in_single = False
@@ -93,12 +94,32 @@ def _segment_command(command: str) -> list[str]:
             in_double = not in_double
             current += ch
         elif not in_single and not in_double:
-            # Look ahead for && or ||
             if command[i : i + 2] in ("&&", "||"):
                 if current.strip():
                     segments.append(current.strip())
                 current = ""
                 i += 2
+                continue
+            if ch in "\n\r":
+                if current.strip():
+                    segments.append(current.strip())
+                current = ""
+                if ch == "\r" and i + 1 < len(command) and command[i + 1] == "\n":
+                    i += 2
+                else:
+                    i += 1
+                continue
+            if ch == "|":
+                if current.strip():
+                    segments.append(current.strip())
+                current = ""
+                i += 1
+                continue
+            if ch == "&":
+                if current.strip():
+                    segments.append(current.strip())
+                current = ""
+                i += 1
                 continue
             if ch == ";":
                 if current.strip():
@@ -112,6 +133,155 @@ def _segment_command(command: str) -> list[str]:
     if current.strip():
         segments.append(current.strip())
     return segments
+
+
+def _strip_env_prefix_tokens(tokens: list[str]) -> list[str]:
+    """Drop leading VAR=value assignments and a leading `env` invocation (spec parser-bypass)."""
+    i = 0
+    n = len(tokens)
+    while i < n:
+        t = tokens[i]
+        if _ENV_ASSIGN_RE.match(t):
+            i += 1
+            continue
+        if t == "env":
+            i += 1
+            if i < n and tokens[i] == "-i":
+                i += 1
+            while i + 1 < n and tokens[i] == "-u":
+                i += 2
+            while i < n and _ENV_ASSIGN_RE.match(tokens[i]):
+                i += 1
+            continue
+        break
+    return tokens[i:]
+
+
+def _extract_substitution_bodies(segment: str) -> list[str] | None:  # noqa: PLR0912
+    """Return inner command strings for `` `...` `` and `$(...)` (balanced parens)."""
+    bodies: list[str] = []
+    i = 0
+    in_single = False
+    in_double = False
+    while i < len(segment):
+        ch = segment[i]
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            i += 1
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            i += 1
+            continue
+        if not in_single and not in_double:
+            if segment[i : i + 2] == "$(":
+                depth = 1
+                j = i + 2
+                while j < len(segment) and depth:
+                    if segment[j] == "(":
+                        depth += 1
+                    elif segment[j] == ")":
+                        depth -= 1
+                    j += 1
+                if depth != 0:
+                    return None
+                bodies.append(segment[i + 2 : j - 1])
+                i = j
+                continue
+            if ch == "`":
+                j = i + 1
+                while j < len(segment):
+                    if segment[j] == "`":
+                        bodies.append(segment[i + 1 : j])
+                        i = j + 1
+                        break
+                    if segment[j] in "'\"":
+                        q = segment[j]
+                        j += 1
+                        while j < len(segment) and segment[j] != q:
+                            if segment[j] == "\\":
+                                j += 1
+                            j += 1
+                        if j >= len(segment):
+                            return None
+                        j += 1
+                        continue
+                    j += 1
+                else:
+                    return None
+                continue
+        i += 1
+    return bodies
+
+
+def _expand_command_string(script: str, depth: int) -> list[str] | None:
+    """Re-segment a script string and flatten each piece (recursion for parser-bypass)."""
+    if depth > _MAX_POLICY_EXPAND_DEPTH:
+        return None
+    out: list[str] = []
+    for part in _segment_command(script):
+        chunk = _flatten_policy_segment(part, depth)
+        if chunk is None:
+            return None
+        out.extend(chunk)
+    return out
+
+
+def _flatten_policy_segment(segment: str, depth: int) -> list[str] | None:  # noqa: PLR0911, PLR0912
+    """Expand one segment for policy matching: env, bash -c, command substitution."""
+    if depth > _MAX_POLICY_EXPAND_DEPTH:
+        return None
+    segment = segment.strip()
+    if not segment:
+        return []
+    try:
+        raw_toks = shlex.split(segment)
+    except ValueError:
+        return None
+    bodies = _extract_substitution_bodies(segment)
+    if bodies is None:
+        return None
+
+    etoks = _strip_env_prefix_tokens(raw_toks)
+    out: list[str] = []
+    if etoks:
+        prog = Path(etoks[0]).name
+        if prog in _SHELL_WRAPPERS and "-c" in etoks:
+            ci = etoks.index("-c")
+            if ci + 1 >= len(etoks):
+                return None
+            script = etoks[ci + 1]
+            inner = _expand_command_string(script, depth + 1)
+            if inner is None:
+                return None
+            out.extend(inner)
+        elif Path(etoks[0]).name == "xargs" and "git" in etoks:
+            out.append(segment)
+            gi = etoks.index("git")
+            synthetic = shlex.join(etoks[gi:])
+            inner = _expand_command_string(synthetic, depth + 1)
+            if inner is None:
+                return None
+            out.extend(inner)
+        else:
+            out.append(segment)
+    for body in bodies:
+        inner = _expand_command_string(body, depth + 1)
+        if inner is None:
+            return None
+        out.extend(inner)
+    return out
+
+
+def _expand_policy_segments(command: str) -> list[str] | None:
+    """Flatten a full shell command into strings to match against shell_segments rules."""
+    out: list[str] = []
+    for part in _segment_command(command):
+        chunk = _flatten_policy_segment(part, 0)
+        if chunk is None:
+            return None
+        out.extend(chunk)
+    return out
 
 
 def _gh_tokens_have_api_delete(tokens: list[str]) -> bool:
@@ -166,6 +336,9 @@ def _parse_gh_subcommand(args: list[str]) -> tuple[str | None, list[str]]:
 
 def _parse_segment_tokens(tokens: list[str]) -> tuple[str | None, str | None, list[str]]:
     """Parse shlex tokens for one shell segment into (program, subcommand, flags)."""
+    tokens = _strip_env_prefix_tokens(tokens)
+    if not tokens:
+        return None, None, []
     program = Path(tokens[0]).name
     args = tokens[1:]
     subcommand: str | None = None
@@ -241,21 +414,23 @@ def _push_has_delete_refspec(segment: str) -> bool:
     return any(t.startswith(":") and not t.startswith("::") for t in tokens)
 
 
-def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
-    """Check if any shell segment in the command matches the shell_segments spec."""
+def _match_shell_segments(match_cfg: dict[str, Any], segments: list[str]) -> bool:
+    """Check if any expanded policy segment matches the shell_segments spec."""
     segment_specs = match_cfg.get("shell_segments", [])
     if not segment_specs:
         return True  # No segment constraint — always matches on other fields
 
-    segments = _segment_command(command)
     for segment in segments:
         try:
-            seg_toks = shlex.split(segment)
+            raw_toks = shlex.split(segment)
         except ValueError:
             continue
-        if not seg_toks:
+        if not raw_toks:
             continue
-        program, subcommand, flags = _parse_segment_tokens(seg_toks)
+        stoks = _strip_env_prefix_tokens(raw_toks)
+        if not stoks:
+            continue
+        program, subcommand, flags = _parse_segment_tokens(raw_toks)
         for spec in segment_specs:
             spec_program = spec.get("program")
             spec_sub = spec.get("subcommand")
@@ -271,7 +446,7 @@ def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
                 continue
             if spec_refspec_delete and not _push_has_delete_refspec(segment):
                 continue
-            if spec.get("gh_api_delete") and not _gh_tokens_have_api_delete(seg_toks):
+            if spec.get("gh_api_delete") and not _gh_tokens_have_api_delete(stoks):
                 continue
             return True
     return False
@@ -290,7 +465,12 @@ def _match_tool_name(match_cfg: dict[str, Any], tool_name: str | None) -> bool:
     return bool(tool_name == spec)
 
 
-def _matches(rule: dict[str, Any], policy_input: dict[str, Any]) -> bool:
+def _matches(
+    rule: dict[str, Any],
+    policy_input: dict[str, Any],
+    policy_segments: list[str],
+    expansion_failed: bool,
+) -> bool:
     """Return True if the rule matches this PolicyInput."""
     # Trigger match
     trigger = policy_input.get("trigger", "")
@@ -308,7 +488,9 @@ def _matches(rule: dict[str, Any], policy_input: dict[str, Any]) -> bool:
     if "shell_segments" in match_cfg:
         if not command:
             return False
-        if not _match_shell_segments(match_cfg, command):
+        if expansion_failed:
+            return False
+        if not _match_shell_segments(match_cfg, policy_segments):
             return False
 
     if not _match_env(match_cfg, env):
@@ -343,6 +525,62 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
     shell = policy_input.get("shell") or {}
     command = shell.get("command", "")
 
+    policy_segments: list[str] = []
+    expansion_failed = False
+    if command:
+        expanded = _expand_policy_segments(command)
+        if expanded is None:
+            expansion_failed = True
+            policy_segments = []
+        else:
+            policy_segments = expanded
+
+    if expansion_failed:
+        out_fail: dict[str, Any] = {
+            "policy_io_version": POLICY_IO_VERSION,
+            "decision": "deny",
+            "user_message": (
+                "Command blocked: shell expansion depth exceeded or nested command "
+                "could not be parsed."
+            ),
+            "agent_message": (
+                "BLOCKED: {command}\n\n"
+                "Buckler could not safely parse this command (recursion depth or "
+                "quoting). Rewrite as a simpler command or ask the user to run it "
+                "outside the agent."
+            ),
+            "additional_context": None,
+            "updated_tool_input": None,
+        }
+        ctx0 = {"command": command}
+        out_fail["agent_message"] = _apply_template(out_fail["agent_message"], ctx0)
+        out_fail["user_message"] = _apply_template(out_fail["user_message"], ctx0)
+        # Env-only rules (e.g. bypass) still apply when expansion fails
+        best_bypass: dict[str, Any] | None = None
+        for rule in rules:
+            if _matches(rule, policy_input, policy_segments, expansion_failed) and (
+                best_bypass is None
+                or rule["priority"] > best_bypass["priority"]
+                or (
+                    rule["priority"] == best_bypass["priority"]
+                    and _action_priority(rule["action"]) > _action_priority(best_bypass["action"])
+                )
+            ):
+                best_bypass = rule
+        if best_bypass is not None and best_bypass["action"] == "allow":
+            out_ok = {
+                "policy_io_version": POLICY_IO_VERSION,
+                "decision": "allow",
+                "user_message": _apply_template(best_bypass.get("user_message"), ctx0),
+                "agent_message": _apply_template(best_bypass.get("agent_message"), ctx0),
+                "additional_context": None,
+                "updated_tool_input": None,
+            }
+            _write_audit_decision(cfg, policy_input, best_bypass, out_ok)
+            return out_ok
+        _write_audit_decision(cfg, policy_input, None, out_fail)
+        return out_fail
+
     template_ctx = {
         "command": command,
         "program": "",
@@ -350,17 +588,15 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
         "pack": "",
         "rule": "",
     }
-    if command:
-        segments = _segment_command(command)
-        if segments:
-            prog, sub, _ = _parse_segment(segments[0])
-            template_ctx["program"] = prog or ""
-            template_ctx["subcommand"] = sub or ""
+    if policy_segments:
+        prog, sub, _ = _parse_segment(policy_segments[0])
+        template_ctx["program"] = prog or ""
+        template_ctx["subcommand"] = sub or ""
 
     # Find best matching rule
     best_rule: dict[str, Any] | None = None
     for rule in rules:
-        if _matches(rule, policy_input) and (
+        if _matches(rule, policy_input, policy_segments, expansion_failed) and (
             best_rule is None
             or rule["priority"] > best_rule["priority"]
             or (

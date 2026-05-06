@@ -50,6 +50,9 @@ def test_golden_fixture(fixture_name: str):
         ("echo a; echo b; echo c", 3),
         ("git push || echo failed", 2),
         ("echo 'hello && world'", 1),  # quoted boundary
+        ("git status & git commit -m x", 2),
+        ("git status | git commit -m x", 2),
+        ("git status\ngit commit -m x", 2),
     ],
 )
 def test_segment_command(command: str, expected_count: int):
@@ -70,7 +73,159 @@ def test_match_shell_segments_skips_empty_shlex_tokens(monkeypatch):
 
     monkeypatch.setattr(core.shlex, "split", split_wrap)
     cfg = {"shell_segments": [{"program": "git", "subcommand": "status"}]}
-    assert core._match_shell_segments(cfg, "__empty__") is False
+    assert core._match_shell_segments(cfg, ["__empty__"]) is False
+
+
+def test_segment_command_cr_only_and_crlf():
+    assert _segment_command("a\rb") == ["a", "b"]
+    assert _segment_command("a\r\nb") == ["a", "b"]
+
+
+def test_evaluate_env_invocation_minus_i():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "env -i git status", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "allow"
+
+
+def test_evaluate_env_invocation_minus_u():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "env -u GIT_DIR git status", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "allow"
+
+
+def test_nested_command_substitution_body():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "echo $( ( git status ) )", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "allow"
+
+
+def test_backtick_with_single_quoted_inside():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "`echo 'x'`", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "allow"
+
+
+def test_bash_c_missing_script_denies():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "bash -c", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "deny"
+
+
+def test_parse_segment_env_only_returns_empty():
+    program, sub, _f = _parse_segment("FOO=bar")
+    assert (program, sub) == (None, None)
+
+
+def test_match_shell_segments_skips_env_only_segment():
+    from buckler.core import _match_shell_segments
+
+    assert (
+        _match_shell_segments(
+            {"shell_segments": [{"program": "git", "subcommand": "status"}]},
+            ["FOO=", "git status"],
+        )
+        is True
+    )
+
+
+def test_flatten_policy_segment_empty_whitespace():
+    from buckler.core import _flatten_policy_segment
+
+    assert _flatten_policy_segment("   ", 0) == []
+
+
+def test_flatten_policy_segment_depth_guard():
+    from buckler.core import _MAX_POLICY_EXPAND_DEPTH, _flatten_policy_segment
+
+    assert _flatten_policy_segment("git status", _MAX_POLICY_EXPAND_DEPTH + 1) is None
+
+
+def test_backtick_unclosed_quote_inside_returns_none():
+    from buckler.core import _extract_substitution_bodies
+
+    assert _extract_substitution_bodies("`echo 'x`") is None
+
+
+def test_backtick_unclosed_returns_none():
+    from buckler.core import _extract_substitution_bodies
+
+    assert _extract_substitution_bodies("`git") is None
+
+
+def test_backtick_escape_inside_double_quote():
+    from buckler.core import _extract_substitution_bodies
+
+    assert _extract_substitution_bodies('`echo "a\\"b"`') is not None
+
+
+def test_substitution_body_expand_fails_denies():
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "echo $(bash -c)", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "deny"
+
+
+def test_match_shell_segments_skips_program_none_from_env_only_tokens():
+    from buckler.core import _match_shell_segments
+
+    assert _match_shell_segments({"shell_segments": [{"program": "git"}]}, ["GIT_DIR="]) is False
+
+
+def test_xargs_inner_expand_failure_propagates(monkeypatch):
+    from buckler import core
+
+    real_expand = core._expand_command_string
+
+    def wrap(script: str, depth: int):
+        if script.strip() == "git commit -m x":
+            return None
+        return real_expand(script, depth)
+
+    monkeypatch.setattr(core, "_expand_command_string", wrap)
+    r = evaluate(
+        {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "xargs git commit -m x", "cwd": "/p"},
+            "env": {},
+        }
+    )
+    assert r["decision"] == "deny"
 
 
 def test_parse_segment_git_unknown_flag_skipped():
@@ -209,18 +364,31 @@ class TestCoreEdgeCases:
         """A match_cfg with no shell_segments key immediately returns True."""
         from buckler.core import _match_shell_segments
 
-        assert _match_shell_segments({}, "git commit -m 'x'") is True
-        assert _match_shell_segments({"env": {"X": "y"}}, "make test") is True
+        assert _match_shell_segments({}, []) is True
+        assert _match_shell_segments({"env": {"X": "y"}}, []) is True
 
-    def test_malformed_segment_skipped_in_pipeline(self):
-        """A malformed segment in a pipeline is silently skipped; evaluation continues."""
-        from buckler.core import _match_shell_segments
+    def test_malformed_segment_denies_unless_bypass(self):
+        """Unparseable tail segment fails expansion → deny (fail-closed)."""
+        from buckler.core import evaluate
 
-        result = _match_shell_segments(
-            {"shell_segments": [{"program": "git"}]},
-            "echo hello && 'unclosed",
+        bad = evaluate(
+            {
+                "policy_io_version": "1",
+                "trigger": "pre_shell_exec",
+                "shell": {"command": "echo hello && 'unclosed", "cwd": "/p"},
+                "env": {},
+            }
         )
-        assert result is False
+        assert bad["decision"] == "deny"
+        ok = evaluate(
+            {
+                "policy_io_version": "1",
+                "trigger": "pre_shell_exec",
+                "shell": {"command": "echo hello && 'unclosed", "cwd": "/p"},
+                "env": {"RETHUNK_ALLOW_SHELL": "1"},
+            }
+        )
+        assert ok["decision"] == "allow"
 
 
 class TestCoreRemainingBranches:
@@ -259,7 +427,7 @@ class TestCoreRemainingBranches:
             "tool": None,
             "env": {},
         }
-        assert _matches(rule, inp) is False
+        assert _matches(rule, inp, [], False) is False
 
     def test_action_priority_unknown(self):
         from buckler.core import _action_priority
@@ -283,7 +451,7 @@ class TestCoreRemainingBranches:
 
         result = _match_shell_segments(
             {"shell_segments": [{"program": "git", "subcommand": "commit"}]},
-            "git commit && 'unclosed",
+            ["git commit", "'unclosed"],
         )
         assert result is True
 
@@ -303,7 +471,7 @@ class TestCoreRemainingBranches:
 
         result = _match_shell_segments(
             {"shell_segments": [{"program": "git"}]},
-            "echo hello && 'unclosed",
+            ["echo hello", "'unclosed"],
         )
         assert result is False
 

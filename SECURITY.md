@@ -9,21 +9,24 @@ Buckler protects against **unintended agentic shell actions**. Its threat model 
 | Agent runs destructive `gh` commands (`repo delete`, `api` DELETE, …) | `agent-gh` pack denies baseline destructive subcommands |
 | Agent force-pushes or deletes remote branches | Deny rules on `--force`, `-f`, `--delete`, `--mirror`, `:branch` push |
 | Agent removes or rewrites a remote | Deny rules on `git remote remove`, configurable on `set-url` |
-| Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; see [Known parser bypasses (status)](#known-parser-bypasses-status) (not all shell-escape families are closed yet) |
+| Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; shell segmentation + expansion in `buckler.core` closes the agent-class bypasses tracked in [Known parser bypasses (status)](#known-parser-bypasses-status). Not a full POSIX `bash` parser — see remaining gaps there. |
 | Tampered release artifact | Cosign keyless verification in `setup.sh` before any extraction |
 | Malicious user rules | Rules run in the same process as Buckler; no sandbox. User rules are trusted. |
 
 ### Known parser bypasses (status)
 
-The `agent-git` pack's shell parser is **not** a full POSIX `bash` implementation. The table below lists **unmitigated** bypass classes that an agent can use today; see the remediation spec for the full matrix and test plan. When a class is fixed in a release, the row is marked **closed** with that version and a matching entry is added to `CHANGELOG.md`.
+The `agent-git` pack's shell parser is **not** a full POSIX `bash` implementation. The table below tracks **residual** bypass classes; closed classes remain documented here with a pointer to the remediation spec and tests.
 
 | Bypass class | Status | Remediation / tracking |
 |--------------|--------|------------------------|
-| `&` (background) — e.g. `git status & git commit` | open | [specs/active/parser-bypass-hardening/spec.md](specs/active/parser-bypass-hardening/spec.md) |
-| Shell pipe between commands (see remediation spec for examples) | open | [specs/active/parser-bypass-hardening/spec.md](specs/active/parser-bypass-hardening/spec.md) |
-| Command substitution `$(…)` and backticks | open | same |
-| `bash -c` / `sh -c` string not recursed | open | same (see also threat row above) |
-| Env prefix / `env` — e.g. `FOO=bar git commit`, `env … git commit` | open | same |
+| `&` (background) — e.g. `git status & git commit` | **closed** | [specs/done/parser-bypass-hardening/spec.md](specs/done/parser-bypass-hardening/spec.md); `tests/test_agent_git_redteam.py` |
+| Shell pipe between commands (e.g. `git status \| xargs git commit`) | **closed** | same (`xargs` delegation matched heuristically) |
+| Command substitution `$(…)` and backticks | **closed** | same |
+| `bash -c` / `sh -c` / `dash -c` string not recursed | **closed** | same (depth cap 3; excess → deny) |
+| Env prefix / `env` — e.g. `FOO=bar git commit`, `env … git commit` | **closed** | same |
+| ANSI-C `$'…'`, here-docs, here-strings | open | Future work (see spec out-of-scope); file an issue if exploitable in harness |
+
+**Remaining posture:** expansion or parse failure on nested commands → **deny** (fail-closed), except `RETHUNK_ALLOW_SHELL=1` env-only bypass still applies.
 
 ### V1 scope (local-only)
 

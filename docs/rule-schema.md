@@ -59,7 +59,7 @@ match:
 
 ### `shell_segments` matching
 
-Buckler segments shell commands on `&&`, `||`, and `;` (respecting quoting), then parses each segment with `shlex.split`. For `git` commands, global options (`-C`, `--git-dir`, `--work-tree`, `-c`, `--namespace`, `--super-prefix`, `--bare`, `--no-replace-objects`, `--no-optional-locks`) are skipped before identifying the subcommand.
+Buckler segments shell commands on `&&`, `||`, `;`, `&`, `|`, and newlines (respecting quoting), expands nested `bash -c` / `sh -c` / `dash -c` scripts, command substitution, and backticks up to a fixed depth, then parses each expanded segment with `shlex.split`. For `git` commands, global options (`-C`, `--git-dir`, `--work-tree`, `-c`, `--namespace`, `--super-prefix`, `--bare`, `--no-replace-objects`, `--no-optional-locks`) are skipped before identifying the subcommand. Leading `VAR=value` assignments and a leading `env` invocation are stripped before program identification.
 
 Multiple entries in `shell_segments` are OR-ed (any segment matching any entry fires the rule).
 
