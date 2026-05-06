@@ -1,0 +1,285 @@
+pack: agent-git
+version: "1"
+description: |
+  Agent-safe Git pack. Makes it safe to give your AI coding agent access to
+  git and gh without worrying about remote destruction or uncontrolled commits.
+  Ports and supersedes the rethunk-mcp-nudge.py legacy hook.
+
+defaults:
+  tier: baseline
+
+rules:
+  # ── Bypass allowlist (highest priority) ──────────────────────────────────
+  - id: bypass-allow
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      env:
+        RETHUNK_ALLOW_SHELL: "1"
+    action: allow
+    priority: 1000
+    tier: baseline
+    user_message: "Buckler bypass active (RETHUNK_ALLOW_SHELL=1). Command allowed."
+    agent_message: null
+
+  # ── Deny: uncontrolled commits ────────────────────────────────────────────
+  - id: deny-git-commit
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: commit
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git commit is blocked by the agent-git pack."
+    agent_message: |
+      BLOCKED: {command}
+
+      You must not run git commit directly. Use the user-rethunk-git MCP tool
+      (batch_commit) to stage and commit changes instead. This ensures commits
+      are reviewed, well-formed, and follow the project commit conventions.
+
+      Do not attempt git commit again. Call batch_commit with the correct
+      workspaceRoot and a conventional commit message.
+
+  # ── Deny: force push ─────────────────────────────────────────────────────
+  - id: deny-git-push-force
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          flags_any: ["--force", "-f"]
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git push --force is blocked. Force-push rewrites remote history."
+    agent_message: |
+      BLOCKED: {command}
+
+      git push --force is not allowed because it irreversibly rewrites remote
+      history and can destroy teammates' work. If you need to update a remote
+      branch, discuss with the user first. Use --force-with-lease only with
+      explicit user approval.
+
+  # ── Deny: push to delete a branch (--delete / -d) ────────────────────────
+  - id: deny-git-push-delete-flag
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          flags_any: ["--delete", "-d"]
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git push --delete is blocked. Remote branch deletion requires manual approval."
+    agent_message: |
+      BLOCKED: {command}
+
+      Remote branch deletion via git push --delete requires explicit user
+      approval. Ask the user before deleting any remote branch.
+
+  # ── Deny: push with `:branch` refspec (implicit delete) ──────────────────
+  - id: deny-git-push-refspec-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          refspec_delete: true
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git push with empty refspec (`:branch`) is blocked — this deletes the remote branch."
+    agent_message: |
+      BLOCKED: {command}
+
+      A git push with an empty-source refspec (e.g. `:branch` or
+      `refs/heads/branch:`) deletes the remote branch. This is not allowed.
+
+  # ── Deny: push --mirror ───────────────────────────────────────────────────
+  - id: deny-git-push-mirror
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          flags_any: ["--mirror"]
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git push --mirror is blocked. Mirror push overwrites the entire remote."
+    agent_message: |
+      BLOCKED: {command}
+
+      git push --mirror overwrites every ref on the remote, which can destroy
+      branches, tags, and history. This is not allowed without explicit approval.
+
+  # ── Deny: remote remove / rm ──────────────────────────────────────────────
+  - id: deny-git-remote-remove
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: "remote remove"
+        - program: git
+          subcommand: "remote rm"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "git remote remove is blocked. Removing a remote is a destructive operation."
+    agent_message: |
+      BLOCKED: {command}
+
+      Removing a git remote severs the link between this local repo and the
+      remote. Ask the user before running git remote remove or git remote rm.
+
+  # ── Warn: git add (non-blocking; steer toward MCP) ───────────────────────
+  - id: warn-git-add
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: add
+    action: nudge
+    priority: 50
+    tier: baseline
+    additional_context: |
+      git add detected in command: {command}
+
+      Prefer user-rethunk-git / batch_commit (MCP) which stages and commits
+      atomically with a well-formed conventional commit message. git add is
+      allowed but you should use MCP staging unless the user has explicitly
+      asked for interactive staging.
+
+  # ── Warn: push --force-with-lease (baseline: allow with warning) ──────────
+  - id: warn-git-push-force-with-lease
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          flags_any: ["--force-with-lease"]
+    action: nudge
+    priority: 70
+    tier: baseline
+    additional_context: |
+      git push --force-with-lease detected: {command}
+
+      --force-with-lease is safer than --force but still rewrites the remote
+      branch tip. Confirm with the user before proceeding if this was not
+      explicitly requested.
+
+  # ── Strict: deny push --force-with-lease ─────────────────────────────────
+  - id: deny-git-push-force-with-lease-strict
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: push
+          flags_any: ["--force-with-lease"]
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git push --force-with-lease is blocked in strict tier."
+    agent_message: |
+      BLOCKED: {command}
+
+      In strict tier, all force-push variants including --force-with-lease
+      are denied. Ask the user to temporarily lower the tier if needed.
+
+  # ── Strict: deny reset --hard ─────────────────────────────────────────────
+  - id: deny-git-reset-hard
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: reset
+          flags_any: ["--hard"]
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git reset --hard is blocked in strict tier."
+    agent_message: |
+      BLOCKED: {command}
+
+      git reset --hard discards uncommitted changes and can lose work. This
+      is blocked in strict tier. Ask the user to confirm before resetting.
+
+  # ── Strict: deny merge ────────────────────────────────────────────────────
+  - id: deny-git-merge
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: merge
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git merge is blocked in strict tier."
+    agent_message: |
+      BLOCKED: {command}
+
+      git merge is blocked in strict tier to prevent unreviewed merges. Use
+      the GitHub PR + merge workflow instead.
+
+  # ── Strict: deny rebase ───────────────────────────────────────────────────
+  - id: deny-git-rebase
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: rebase
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git rebase is blocked in strict tier."
+    agent_message: |
+      BLOCKED: {command}
+
+      git rebase rewrites history and is blocked in strict tier.
+
+  # ── Strict: deny commit-tree ──────────────────────────────────────────────
+  - id: deny-git-commit-tree
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: commit-tree
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git commit-tree is blocked in strict tier."
+    agent_message: "BLOCKED: {command}\n\ngit commit-tree is a plumbing command that creates commits directly. Blocked in strict tier."
+
+  # ── Strict: deny remote set-url ───────────────────────────────────────────
+  - id: deny-git-remote-set-url
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: git
+          subcommand: "remote set-url"
+    action: deny
+    priority: 100
+    tier: strict
+    user_message: "git remote set-url is blocked in strict tier."
+    agent_message: "BLOCKED: {command}\n\ngit remote set-url modifies remote tracking. Blocked in strict tier."
+
+  # ── Nudge: post-tool MCP steering ─────────────────────────────────────────
+  - id: nudge-mcp-available
+    trigger: [post_tool_success]
+    match:
+      shell_segments:
+        - program: git
+        - program: gh
+    action: nudge
+    priority: 10
+    tier: baseline
+    additional_context: |
+      You used a raw git/gh shell command. When available, prefer MCP tools:
+      - user-rethunk-git / batch_commit: stage and commit changes
+      - user-rethunk-git / git_status: inspect working tree status
+      - user-rethunk-github: GitHub operations (PRs, issues, CI)
+
+      Using MCP tools ensures commits follow conventions and avoids hooks.
