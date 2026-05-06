@@ -11,6 +11,8 @@ set -euo pipefail
 BUCKLER_REPO="Rethunk-AI/buckler"
 BUCKLER_RELEASE_BASE="https://github.com/${BUCKLER_REPO}/releases"
 BUCKLER_HOOK_PREFIX="buckler:"
+# Deliberate shellcheck failure to prove CI gate (remove after red run).
+SHELLCHECK_PROOF_SC2034=1
 SCRIPT_VERSION="0.1.0"
 
 # ── Utilities ────────────────────────────────────────────────────────────────
