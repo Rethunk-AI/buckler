@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/Rethunk-AI/buckler/docs/contracts/policy-io.schema.json",
   "title": "Buckler Policy I/O Schema",
-  "description": "Harness-neutral contract between adapters and buckler.core. policy_io_version=1.",
+  "description": "Harness-neutral contract between adapters and buckler.core. policy_io_version=1; includes unknown_harness_event trigger for adapter fallbacks.",
   "definitions": {
     "PolicyInput": {
       "type": "object",
@@ -17,7 +17,13 @@
         },
         "trigger": {
           "type": "string",
-          "enum": ["pre_shell_tool", "pre_shell_exec", "post_tool_success", "post_tool_failure"],
+          "enum": [
+            "pre_shell_tool",
+            "pre_shell_exec",
+            "post_tool_success",
+            "post_tool_failure",
+            "unknown_harness_event"
+          ],
           "description": "Abstract event kind; adapters map harness events to these values."
         },
         "shell": {

@@ -25,7 +25,7 @@ rules:
 |-------|------|----------|-------------|
 | `id` | `string` | Yes | Unique within the pack. |
 | `trigger` | `string \| list[string]` | Yes | Abstract trigger kind(s) from `policy-io.md`. |
-| `match` | `object` | Yes | Match conditions (all must pass). |
+| `match` | `object` | No | Match conditions (all must pass). Default: unconstrained (`{}`). |
 | `action` | `string` | Yes | `allow`, `deny`, `ask`, or `nudge`. |
 | `priority` | `integer` | No | Higher wins on conflict. Default: `50`. |
 | `tier` | `string` | No | `baseline` or `strict`. Rules with `tier: strict` only fire when `config.toml` sets `tier = "strict"`. Default: `baseline`. |
@@ -46,6 +46,7 @@ match:
       subcommand: commit      # exact match on first non-flag arg after program
       flags_any: []           # (optional) at least one of these flags present
       flags_all: []           # (optional) all of these flags must be present
+      refspec_delete: false   # (optional) when true, segment must be git push with ':ref' delete refspec
 
   # Matches on the tool name (for pre_shell_tool / post_tool_* triggers)
   tool_name: Shell            # exact string match
@@ -60,6 +61,8 @@ match:
 Buckler segments shell commands on `&&`, `||`, and `;` (respecting quoting), then parses each segment with `shlex.split`. For `git` commands, global options (`-C`, `--git-dir`, `--work-tree`, `-c`, `--namespace`, `--super-prefix`, `--bare`, `--no-replace-objects`, `--no-optional-locks`) are skipped before identifying the subcommand.
 
 Multiple entries in `shell_segments` are OR-ed (any segment matching any entry fires the rule).
+
+When `refspec_delete` is `true`, the segment must be a `git push` that includes an implicit-delete refspec (a token starting with `:` that is not `::`).
 
 ### `env` matching
 

@@ -69,6 +69,7 @@ Adapter                     Core
 | `pre_shell_exec` | `beforeShellExecution` | `true` | Final shell line about to execute. |
 | `post_tool_success` | `postToolUse` | `false` | Tool completed successfully; nudge/context injection. |
 | `post_tool_failure` | `postToolUseFailure` | `false` | Tool failed; optional diagnostic context. |
+| `unknown_harness_event` | (unrecognized `hook_event_name`) | varies | Adapter escape hatch: matches no builtin rules unless you add user rules; core default is allow. |
 
 ## `PolicyOutput`
 
