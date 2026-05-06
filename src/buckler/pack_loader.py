@@ -16,13 +16,9 @@ from typing import Any
 
 import yaml
 
-from buckler import paths
+from buckler import POLICY_TRIGGERS, paths
 
 log = logging.getLogger(__name__)
-
-_VALID_TRIGGERS = frozenset(
-    ["pre_shell_tool", "pre_shell_exec", "post_tool_success", "post_tool_failure"]
-)
 _VALID_ACTIONS = frozenset(["allow", "deny", "ask", "nudge"])
 _VALID_TIERS = frozenset(["baseline", "strict"])
 
@@ -50,7 +46,7 @@ def _normalize_rule(rule: dict[str, Any], pack_id: str, source: str) -> dict[str
 
     triggers = rule["trigger"] if isinstance(rule["trigger"], list) else [rule["trigger"]]
     for t in triggers:
-        if t not in _VALID_TRIGGERS:
+        if t not in POLICY_TRIGGERS:
             raise PackLoadError(f"Rule '{rule['id']}': unknown trigger '{t}'")
 
     action = rule["action"]
@@ -131,6 +127,44 @@ def load_config() -> dict[str, Any]:
         merged = {**defaults}
         merged["core"].update(data.get("core", {}))
         return merged
-    except Exception as e:
+    except (OSError, tomllib.TOMLDecodeError, TypeError, ValueError) as e:
         log.warning("Failed to load config %s: %s", cfg_file, e)
         return defaults
+
+
+def validate_pack_files(
+    *,
+    packs_dir: Path | None = None,
+    user_rules_dir: Path | None = None,
+) -> list[str]:
+    """Validate YAML pack files; return human-readable error strings (empty if OK)."""
+    errors: list[str] = []
+    builtin = packs_dir or paths.packs_dir()
+    user = user_rules_dir or paths.user_rules_dir()
+
+    def check_dir(d: Path, label: str) -> None:
+        if not d.exists():
+            return
+        for pack_file in sorted(d.glob("*.yaml")):
+            try:
+                data = _load_yaml(pack_file)
+            except PackLoadError as e:
+                errors.append(f"{label} {pack_file}: {e}")
+                continue
+            pack_id = data.get("pack", pack_file.stem)
+            rules_raw = data.get("rules", [])
+            if not isinstance(rules_raw, list):
+                errors.append(f"{label} {pack_file}: 'rules' must be a list")
+                continue
+            for r in rules_raw:
+                if not isinstance(r, dict):
+                    errors.append(f"{label} {pack_file}: each rule must be a mapping")
+                    continue
+                try:
+                    _normalize_rule(r, pack_id, str(pack_file))
+                except PackLoadError as e:
+                    errors.append(str(e))
+
+    check_dir(builtin, "builtin")
+    check_dir(user, "user")
+    return errors
