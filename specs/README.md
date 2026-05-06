@@ -6,8 +6,8 @@
 
 | Slug | State | DTG | Owner |
 |------|-------|-----|-------|
+| docs-and-runbooks | IN_PROGRESS | 060459ZMAY26 | Bastion (J-3) |
 | code-quality-sweep | DRAFT | 060431ZMAY26 | Bastion (J-3) |
-| docs-and-runbooks | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | hooks-cross-platform-quoting | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | legacy-deprecation-window | DRAFT | 060431ZMAY26 | Bastion (J-3) |
 | pack-gh-coverage | DRAFT | 060431ZMAY26 | Bastion (J-3) |
@@ -28,5 +28,6 @@
 | Slug | DTG | Note |
 |------|-----|------|
 | _(none)_ | | |
+
 
 

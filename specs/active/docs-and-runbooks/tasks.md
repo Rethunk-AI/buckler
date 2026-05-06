@@ -1,6 +1,6 @@
 # Tasks — docs-and-runbooks
 
-Status: DRAFT 060431ZMAY26
+Status: IN_PROGRESS 060459ZMAY26 — Bastion (J-3) claims execution
 
 ## P0
 
