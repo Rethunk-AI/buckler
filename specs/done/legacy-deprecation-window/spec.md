@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | DRAFT 060431ZMAY26 |
+| Status | DONE 060611ZMAY26 — Remove rethunk-mcp-nudge migration scaffolding: purge-legacy path, docs, pack/HUMANS/README/skill copy; Q-table ratified; no greenfield HIGH CI gate (CONTRIBUTING note). |
 | Authored | 060431ZMAY26 |
 | Owner | Bastion (J-3) |
 | Carry-forward from | 2026-05-05 P1–P10 review of buckler. `greenfield-scrub` reports 17 high-severity legacy markers, all referencing the predecessor `rethunk-mcp-nudge.py`. The pre-1.0 repo carries an entire `_purge_legacy` codepath in `setup.sh`, a `--purge-legacy` install flag, the full `docs/migration.md`, a "ports and supersedes" sentence in `packs/agent-git.yaml`, and several mentions in `HUMANS.md`. The repo isn't even tagged 0.1.0 yet. |
@@ -54,11 +54,11 @@ Q1 below. The answer drives the rest of the spec.
 
 | Q | Proposal | Status |
 |---|----------|--------|
-| Q1 | Was `rethunk-mcp-nudge.py` shipped to external users (i.e. installed via a public README or dotfiles repo someone else's machines run)? **Operator answer required.** | **Open** |
-| Q2 | If Q1 = yes: deprecation horizon. Proposal: **one minor release** — keep the migration code through 0.2.x, remove in 0.3.0. Justification: small user base, low cost to wait one cycle. | **Open** |
-| Q3 | If Q1 = yes: should `--purge-legacy` become a no-op-with-warning before hard deletion, or removed cleanly at the deletion version? Proposal: **warn-then-delete** for one minor release (warns in 0.2.x, removed in 0.3.0). | **Open** |
-| Q4 | If Q1 = no: delete `docs/migration.md` outright, or move under `docs/deprecated/`? Proposal: **delete** — no public history to preserve. | **Open** |
-| Q5 | After resolution, run `greenfield-scrub` again and decide whether to add a `--fail-on HIGH` gate to CI. Proposal: **yes** — once HIGH is intentional, gate against accidental reintroduction. | **Open** |
+| Q1 | Was `rethunk-mcp-nudge.py` shipped to external users (i.e. installed via a public README or dotfiles repo someone else's machines run)? **Operator answer required.** | **Ratified 060800ZMAY26** — **No.** Never shipped; operators who still have local hooks remove them manually; migration code deleted from this repo. |
+| Q2 | If Q1 = yes: deprecation horizon. Proposal: **one minor release** — keep the migration code through 0.2.x, remove in 0.3.0. Justification: small user base, low cost to wait one cycle. | **Ratified 060800ZMAY26** — **N/A** (Q1 = no). |
+| Q3 | If Q1 = yes: should `--purge-legacy` become a no-op-with-warning before hard deletion, or removed cleanly at the deletion version? Proposal: **warn-then-delete** for one minor release (warns in 0.2.x, removed in 0.3.0). | **Ratified 060800ZMAY26** — **N/A** (Q1 = no). |
+| Q4 | If Q1 = no: delete `docs/migration.md` outright, or move under `docs/deprecated/`? Proposal: **delete** — no public history to preserve. | **Ratified 060800ZMAY26** — **Delete** `docs/migration.md`. |
+| Q5 | After resolution, run `greenfield-scrub` again and decide whether to add a `--fail-on HIGH` gate to CI. Proposal: **yes** — once HIGH is intentional, gate against accidental reintroduction. | **Ratified 060800ZMAY26** — **No CI gate.** Rationale in `CONTRIBUTING.md` (ad-hoc scrub; contract docs may still match scrub heuristics). |
 
 ## Acceptance
 
