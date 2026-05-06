@@ -77,34 +77,36 @@ jobs:
             --bundle "${TARBALL}.bundle" \
             --yes
 
+      # Org policy: no third-party release actions — use GitHub CLI (bundled on hosted runners).
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3.0.0
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Buckler ${{ steps.version.outputs.version }}
-          body: |
-            ## Buckler ${{ steps.version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          cat > release-notes.md <<EOF
+          ## Buckler ${VERSION}
 
-            ### Install
+          ### Install
 
-            ```bash
-            curl -fsSL https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/setup.sh | bash -s install
-            ```
+          \`\`\`bash
+          curl -fsSL https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/setup.sh | bash -s install
+          \`\`\`
 
-            ### Verify before run
+          ### Verify before run
 
-            ```bash
-            curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/buckler-${{ steps.version.outputs.version }}.tar.gz
-            curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/buckler-${{ steps.version.outputs.version }}.tar.gz.bundle
-            cosign verify-blob buckler-${{ steps.version.outputs.version }}.tar.gz \
-              --bundle buckler-${{ steps.version.outputs.version }}.tar.gz.bundle \
-              --certificate-identity-regexp "https://github.com/Rethunk-AI/buckler/.github/workflows/release.yml" \
-              --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-            bash setup.sh install
-            ```
-          files: |
-            ${{ env.TARBALL }}
-            ${{ env.TARBALL }}.bundle
-            scripts/setup.sh
-          draft: false
-          prerelease: false
+          \`\`\`bash
+          curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz
+          curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz.bundle
+          cosign verify-blob buckler-${VERSION}.tar.gz \\
+            --bundle buckler-${VERSION}.tar.gz.bundle \\
+            --certificate-identity-regexp "https://github.com/Rethunk-AI/buckler/.github/workflows/release.yml" \\
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          bash setup.sh install
+          \`\`\`
+          EOF
+          gh release create "${TAG}" \
+            --title "Buckler ${VERSION}" \
+            --notes-file release-notes.md \
+            --verify-tag \
+            "${TARBALL}" "${TARBALL}.bundle" scripts/setup.sh
