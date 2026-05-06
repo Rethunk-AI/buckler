@@ -54,7 +54,23 @@ jobs:
         run: uv run mypy src/buckler/
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest tests/ -v --tb=short 2>&1 | tee "${RUNNER_TEMP}/pytest-output.txt"
+
+      - name: Coverage summary
+        if: always()
+        shell: bash
+        run: |
+          [[ -f "${RUNNER_TEMP}/pytest-output.txt" ]] || exit 0
+          {
+            echo "## Coverage — Python ${{ matrix.python-version }} (${{ matrix.os }})"
+            echo ""
+            echo '```'
+            awk '/^Name /{p=1} p' "${RUNNER_TEMP}/pytest-output.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   node-runtime:
     name: Node ${{ matrix.node-version }} (smoke)
