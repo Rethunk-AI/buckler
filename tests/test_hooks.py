@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import sys
 from pathlib import Path
 from unittest import mock
@@ -132,6 +133,46 @@ class TestHooks:
         from buckler.hooks import _read_hooks_json
 
         assert _read_hooks_json(bad) == {}
+
+    @pytest.mark.parametrize(
+        "interp",
+        [
+            Path("/home/joe smith/.local/share/buckler/.venv/bin/python"),
+            Path("/home/joe's/.venv/bin/python"),
+            Path("C:/Users/Damon Blais/AppData/Local/Buckler/.venv/Scripts/python.exe"),
+            Path('C:/Users/x/weird"name/python.exe'),
+        ],
+    )
+    def test_buckler_command_shlex_roundtrip_parametrize(self, interp: Path):
+        from buckler.hooks import _buckler_command
+
+        cmd = _buckler_command(venv_python=interp)
+        argv = shlex.split(cmd, posix=True)
+        assert argv[0] == str(interp)
+        assert argv[1:] == ["-m", "buckler", "--driver", "cursor"]
+
+    @pytest.mark.parametrize(
+        "bad",
+        ["/tmp/py\nthon", "/tmp/py\rthon", "C:/bad\r\n.exe"],
+    )
+    def test_buckler_command_rejects_line_break_in_path(self, bad: str):
+        from buckler.hooks import _buckler_command
+
+        with pytest.raises(ValueError, match="line break"):
+            _buckler_command(venv_python=Path(bad))
+
+    def test_merge_writes_command_roundtrip_via_shlex(self, tmp_path: Path):
+        """hooks.json command field round-trips argv[0] through POSIX shlex (Git Bash posture)."""
+        hooks_json = tmp_path / "hooks.json"
+        interp = Path("/home/joe smith/.local/share/buckler/.venv/bin/python")
+        from buckler.hooks import merge
+
+        merge(hooks_path=hooks_json, venv_python=interp)
+        data = json.loads(hooks_json.read_text())
+        cmd = next(h["command"] for h in data["hooks"] if h["name"] == "buckler:pre-shell-exec")
+        argv = shlex.split(cmd, posix=True)
+        assert argv[0] == str(interp)
+        assert argv[1:] == ["-m", "buckler", "--driver", "cursor"]
 
 
 class TestHooksMainInProcess:

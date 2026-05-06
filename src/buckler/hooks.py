@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shlex
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -44,18 +45,30 @@ _HOOK_DEFINITIONS = [
     },
 ]
 
+# Fixed tail for hooks.json — no whitespace; left unquoted (spec hooks-cross-platform-quoting Q2).
+_HOOK_CMD_SUFFIX = " -m buckler --driver cursor"
+
+
+def _quote_hook_interpreter(pathish: Path | str) -> str:
+    """POSIX shell quote for bash / Git Bash; raises if the path cannot be embedded safely."""
+    s = pathish if isinstance(pathish, str) else str(pathish)
+    if "\n" in s or "\r" in s:
+        msg = "Interpreter path contains a line break; cannot write a safe hooks.json command field"
+        raise ValueError(msg)
+    return shlex.quote(s)
+
 
 def _buckler_command(venv_python: Path | None = None) -> str:
     """Compute the absolute command for hooks.json."""
     if venv_python is not None:
-        return f"{venv_python} -m buckler --driver cursor"
+        return f"{_quote_hook_interpreter(venv_python)}{_HOOK_CMD_SUFFIX}"
     cur = paths.current_dir()
     if cur is not None:
         py = paths.project_venv_python(cur)
         if py is not None:
-            return f"{py} -m buckler --driver cursor"
+            return f"{_quote_hook_interpreter(py)}{_HOOK_CMD_SUFFIX}"
     # Development fallback: use the active Python
-    return f"{sys.executable} -m buckler --driver cursor"
+    return f"{_quote_hook_interpreter(sys.executable)}{_HOOK_CMD_SUFFIX}"
 
 
 def _read_hooks_json(path: Path) -> dict[str, Any]:
