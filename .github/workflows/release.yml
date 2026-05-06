@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write      # create GitHub releases + upload assets
+  id-token: write      # Cosign keyless OIDC signing
+
+jobs:
+  release:
+    name: Build, sign, and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run tests (gate)
+        run: uv run pytest tests/ -q
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release tarball
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARBALL="buckler-${VERSION}.tar.gz"
+          # Include source, packs, scripts, docs, and lock file (not .venv)
+          tar -czf "$TARBALL" \
+            --exclude='.venv' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='.ruff_cache' \
+            --transform "s|^|buckler-${VERSION}/|" \
+            src/ packs/ scripts/ docs/ \
+            pyproject.toml uv.lock LICENSE README.md HUMANS.md AGENTS.md \
+            CONTRIBUTING.md SECURITY.md ARCHITECTURE.md
+          echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign tarball (Cosign keyless)
+        run: |
+          cosign sign-blob "$TARBALL" \
+            --bundle "${TARBALL}.bundle" \
+            --yes
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Buckler ${{ steps.version.outputs.version }}
+          body: |
+            ## Buckler ${{ steps.version.outputs.version }}
+
+            ### Install
+
+            ```bash
+            curl -fsSL https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/setup.sh | bash -s install
+            ```
+
+            ### Verify before run
+
+            ```bash
+            curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/buckler-${{ steps.version.outputs.version }}.tar.gz
+            curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${{ steps.version.outputs.tag }}/buckler-${{ steps.version.outputs.version }}.tar.gz.bundle
+            cosign verify-blob buckler-${{ steps.version.outputs.version }}.tar.gz \
+              --bundle buckler-${{ steps.version.outputs.version }}.tar.gz.bundle \
+              --certificate-identity-regexp "https://github.com/Rethunk-AI/buckler/.github/workflows/release.yml" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+            bash setup.sh install
+            ```
+          files: |
+            ${{ env.TARBALL }}
+            ${{ env.TARBALL }}.bundle
+            scripts/setup.sh
+          draft: false
+          prerelease: false
