@@ -12,7 +12,7 @@ import logging
 import shlex
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NotRequired, TypedDict, cast
 
 from buckler import paths
 
@@ -20,7 +20,22 @@ log = logging.getLogger(__name__)
 
 BUCKLER_HOOK_PREFIX = "buckler:"
 
-_HOOK_DEFINITIONS = [
+
+class HookMatcher(TypedDict):
+    type: str
+    name: str
+
+
+class HookDefinition(TypedDict):
+    name: str
+    description: str
+    event: str
+    timeout: int
+    failClosed: bool
+    matchers: NotRequired[list[HookMatcher]]
+
+
+_HOOK_DEFINITIONS: list[HookDefinition] = [
     {
         "name": "buckler:pre-shell-exec",
         "description": "Buckler agent-git pack: deny git commit, force push, remote destruction",
