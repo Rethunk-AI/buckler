@@ -9,9 +9,9 @@ PolicyInput dict, loads rules via pack_loader, and returns a PolicyOutput dict.
 from __future__ import annotations
 
 import logging
-import os
 import re
 import shlex
+from pathlib import Path
 from typing import Any
 
 from buckler import POLICY_IO_VERSION
@@ -59,7 +59,7 @@ def _segment_command(command: str) -> list[str]:
                 current = ""
                 i += 2
                 continue
-            elif ch == ";":
+            if ch == ";":
                 if current.strip():
                     segments.append(current.strip())
                 current = ""
@@ -87,7 +87,7 @@ def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
 
     program = tokens[0]
     # Strip path prefix (e.g. /usr/bin/git → git)
-    program = os.path.basename(program)
+    program = Path(program).name
 
     args = tokens[1:]
     subcommand: str | None = None
@@ -128,7 +128,9 @@ def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
     return program, subcommand, flags
 
 
-def _flags_match(rule_flags_any: list[str], rule_flags_all: list[str], actual_flags: list[str]) -> bool:
+def _flags_match(
+    rule_flags_any: list[str], rule_flags_all: list[str], actual_flags: list[str]
+) -> bool:
     """Check flag constraints from a shell_segment match entry."""
     actual_set = set(actual_flags)
     if rule_flags_any and not any(f in actual_set for f in rule_flags_any):
@@ -185,7 +187,7 @@ def _match_tool_name(match_cfg: dict[str, Any], tool_name: str | None) -> bool:
     spec = match_cfg.get("tool_name")
     if spec is None:
         return True
-    return tool_name == spec
+    return bool(tool_name == spec)
 
 
 def _matches(rule: dict[str, Any], policy_input: dict[str, Any]) -> bool:
@@ -257,16 +259,15 @@ def evaluate(policy_input: dict[str, Any]) -> dict[str, Any]:
     # Find best matching rule
     best_rule: dict[str, Any] | None = None
     for rule in rules:
-        if _matches(rule, policy_input):
-            if best_rule is None:
-                best_rule = rule
-            else:
-                # Higher priority wins; on tie, higher action severity wins
-                if rule["priority"] > best_rule["priority"] or (
-                    rule["priority"] == best_rule["priority"]
-                    and _action_priority(rule["action"]) > _action_priority(best_rule["action"])
-                ):
-                    best_rule = rule
+        if _matches(rule, policy_input) and (
+            best_rule is None
+            or rule["priority"] > best_rule["priority"]
+            or (
+                rule["priority"] == best_rule["priority"]
+                and _action_priority(rule["action"]) > _action_priority(best_rule["action"])
+            )
+        ):
+            best_rule = rule
 
     if best_rule is None:
         return {

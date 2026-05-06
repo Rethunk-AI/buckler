@@ -6,11 +6,12 @@ Run via: python -m buckler.hooks merge
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from buckler import paths
 
@@ -62,7 +63,7 @@ def _read_hooks_json(path: Path) -> dict[str, Any]:
         return {}
     try:
         with path.open() as f:
-            return json.load(f)
+            return cast("dict[str, Any]", json.load(f))
     except (json.JSONDecodeError, OSError) as e:
         log.warning("Could not read %s: %s", path, e)
         return {}
@@ -75,7 +76,9 @@ def _write_hooks_json(path: Path, data: dict[str, Any]) -> None:
         f.write("\n")
 
 
-def merge(hooks_path: Path | None = None, venv_python: Path | None = None, dry_run: bool = False) -> None:
+def merge(
+    hooks_path: Path | None = None, venv_python: Path | None = None, dry_run: bool = False
+) -> None:
     """Idempotently merge Buckler hook entries into hooks.json."""
     target = hooks_path or paths.cursor_hooks_json()
     command = _buckler_command(venv_python)
@@ -136,8 +139,6 @@ def status(hooks_path: Path | None = None) -> None:
 
 def main() -> None:
     """CLI entry for python -m buckler.hooks <subcommand>."""
-    import argparse
-
     parser = argparse.ArgumentParser(prog="python -m buckler.hooks")
     sub = parser.add_subparsers(dest="cmd")
 

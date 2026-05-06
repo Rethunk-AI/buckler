@@ -10,6 +10,7 @@ Packs are YAML files defining policy rules. Buckler loads them in this order
 from __future__ import annotations
 
 import logging
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -124,14 +125,6 @@ def load_config() -> dict[str, Any]:
     defaults: dict[str, Any] = {"core": {"tier": "baseline", "audit_log": False}}
     if not cfg_file.exists():
         return defaults
-    try:
-        import tomllib  # stdlib on Python 3.11+
-    except ImportError:  # pragma: no cover
-        try:  # pragma: no cover
-            import tomli as tomllib  # type: ignore[no-redef]  # backport for < 3.11  # pragma: no cover
-        except ImportError:  # pragma: no cover
-            log.warning("tomllib not available; using default config")  # pragma: no cover
-            return defaults  # pragma: no cover
     try:
         with cfg_file.open("rb") as f:
             data = tomllib.load(f)

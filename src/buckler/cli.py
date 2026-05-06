@@ -16,22 +16,20 @@ import json
 import logging
 import os
 import sys
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 from buckler import __version__
+from buckler.adapters import cursor as cursor_adapter
 from buckler.core import evaluate
 
 log = logging.getLogger(__name__)
 
 
 def _load_json_from(source: str | None) -> dict[str, Any]:
-    if source is None or source == "-":
-        raw = sys.stdin.read()
-    else:
-        with open(source) as f:
-            raw = f.read()
+    raw = sys.stdin.read() if source is None or source == "-" else Path(source).read_text()
     try:
-        return json.loads(raw)
+        return cast("dict[str, Any]", json.loads(raw))
     except json.JSONDecodeError as e:
         log.error("Invalid JSON input: %s", e)
         sys.exit(1)
@@ -42,14 +40,10 @@ def _write_json_to(dest: str | None, data: dict[str, Any]) -> None:
     if dest is None or dest == "-":
         print(out)
     else:
-        with open(dest, "w") as f:
-            f.write(out)
-            f.write("\n")
+        Path(dest).write_text(out + "\n")
 
 
 def _run_cursor_driver(args: argparse.Namespace) -> None:
-    from buckler.adapters import cursor as cursor_adapter
-
     raw = _load_json_from(None)
     policy_input = cursor_adapter.adapt_input(raw)
 
@@ -89,10 +83,16 @@ def main() -> None:
         "evaluate",
         help="Evaluate a PolicyInput JSON and write PolicyOutput (harness-neutral)",
     )
-    eval_p.add_argument("--input", "-i", default=None, metavar="FILE",
-                        help="PolicyInput JSON file (default: stdin)")
-    eval_p.add_argument("--output", "-o", default=None, metavar="FILE",
-                        help="PolicyOutput JSON file (default: stdout)")
+    eval_p.add_argument(
+        "--input", "-i", default=None, metavar="FILE", help="PolicyInput JSON file (default: stdin)"
+    )
+    eval_p.add_argument(
+        "--output",
+        "-o",
+        default=None,
+        metavar="FILE",
+        help="PolicyOutput JSON file (default: stdout)",
+    )
 
     args = parser.parse_args()
 
@@ -100,13 +100,11 @@ def main() -> None:
 
     if args.subcommand == "evaluate":
         _run_evaluate(args)
+    elif args.driver == "cursor":
+        _run_cursor_driver(args)
     else:
-        # Default: run the selected driver
-        if args.driver == "cursor":
-            _run_cursor_driver(args)
-        else:
-            log.error("Unknown driver: %s", args.driver)
-            sys.exit(1)
+        log.error("Unknown driver: %s", args.driver)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,11 @@ def config_dir() -> Path:
 def state_dir() -> Path:
     """Root for audit log and runtime state."""
     if _is_windows():
-        default = Path(os.environ.get("LOCALAPPDATA", _home() / "AppData" / "Local")) / "Buckler" / "state"
+        default = (
+            Path(os.environ.get("LOCALAPPDATA", _home() / "AppData" / "Local"))
+            / "Buckler"
+            / "state"
+        )
     else:
         default = _env_or("XDG_STATE_HOME", default=_home() / ".local" / "state") / "buckler"
     return _env_or("BUCKLER_STATE_HOME", default=default)
@@ -75,11 +79,10 @@ def current_dir() -> Path | None:
             except (KeyError, json.JSONDecodeError, OSError):
                 return None
         return None
-    else:
-        link = base / "current"
-        if link.exists() or link.is_symlink():
-            return link.resolve()
-        return None
+    link = base / "current"
+    if link.exists() or link.is_symlink():
+        return link.resolve()
+    return None
 
 
 def packs_dir() -> Path:
