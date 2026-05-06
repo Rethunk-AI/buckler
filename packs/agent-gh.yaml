@@ -1,0 +1,180 @@
+pack: agent-gh
+version: "1"
+description: |
+  Agent-safe GitHub CLI (`gh`) pack. Baseline deny rules for destructive `gh`
+  subcommands (repo/release deletion, API DELETE, secrets, keys). Ships enabled
+  by default alongside `agent-git`. Operators who disable `agent-git` should
+  still load this pack if agents have `gh` access.
+
+defaults:
+  tier: baseline
+
+rules:
+  # ── Bypass allowlist (same contract as agent-git) ─────────────────────────
+  - id: bypass-allow
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      env:
+        RETHUNK_ALLOW_SHELL: "1"
+    action: allow
+    priority: 1000
+    tier: baseline
+    user_message: "Buckler bypass active (RETHUNK_ALLOW_SHELL=1). Command allowed."
+    agent_message: null
+
+  # ── Deny: destructive gh commands ──────────────────────────────────────────
+  - id: deny-gh-repo-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "repo delete"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh repo delete is blocked. Repository deletion is irreversible."
+    agent_message: |
+      BLOCKED: {command}
+
+      gh repo delete destroys the repository and its issues, PRs, and releases.
+      Ask the user for explicit approval before any repo deletion.
+
+  - id: deny-gh-repo-archive
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "repo archive"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh repo archive is blocked. Archiving makes the project read-only."
+    agent_message: |
+      BLOCKED: {command}
+
+      gh repo archive is a destructive-in-spirit operation. Confirm with the user
+      before archiving a repository.
+
+  - id: deny-gh-release-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "release delete"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh release delete is blocked."
+    agent_message: |
+      BLOCKED: {command}
+
+      Deleting a release can break consumers. Ask the user before deleting releases.
+
+  - id: deny-gh-release-delete-asset
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "release delete-asset"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh release delete-asset is blocked."
+    agent_message: |
+      BLOCKED: {command}
+
+      Removing release assets is destructive. Ask the user first.
+
+  - id: deny-gh-pr-close-delete-branch
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "pr close"
+          flags_any: ["--delete-branch"]
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh pr close --delete-branch is blocked (remote branch deletion)."
+    agent_message: |
+      BLOCKED: {command}
+
+      --delete-branch removes the remote branch. Ask the user before using this flag.
+
+  - id: deny-gh-api-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "api"
+          gh_api_delete: true
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh api DELETE is blocked (generic destructive API escape hatch)."
+    agent_message: |
+      BLOCKED: {command}
+
+      gh api with HTTP DELETE can destroy resources not covered by explicit rules.
+      Use a narrower, user-approved workflow or MCP tools instead.
+
+  - id: deny-gh-secret-remove
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "secret remove"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh secret remove is blocked."
+    agent_message: |
+      BLOCKED: {command}
+
+      Removing secrets can break CI and deployments. Ask the user first.
+
+  - id: deny-gh-ssh-key-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "ssh-key delete"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh ssh-key delete is blocked."
+    agent_message: |
+      BLOCKED: {command}
+
+      Deleting SSH keys affects account access. Ask the user before proceeding.
+
+  - id: deny-gh-gpg-key-delete
+    trigger: [pre_shell_exec, pre_shell_tool]
+    match:
+      shell_segments:
+        - program: gh
+          subcommand: "gpg-key delete"
+    action: deny
+    priority: 100
+    tier: baseline
+    user_message: "gh gpg-key delete is blocked."
+    agent_message: |
+      BLOCKED: {command}
+
+      Deleting GPG keys affects signing and verification. Ask the user first.
+
+  # ── Nudge: post-tool MCP steering (gh only) ──────────────────────────────
+  - id: nudge-mcp-github-cli
+    trigger: [post_tool_success]
+    match:
+      shell_segments:
+        - program: gh
+    action: nudge
+    priority: 10
+    tier: baseline
+    additional_context: |
+      You used a raw gh shell command. When available, prefer MCP tools:
+      - user-rethunk-github: GitHub operations (PRs, issues, CI)
+      - user-rethunk-git / batch_commit: commits and working tree
+
+      Using MCP tools reduces foot-guns and keeps actions auditable.

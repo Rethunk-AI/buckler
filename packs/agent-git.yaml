@@ -2,8 +2,9 @@ pack: agent-git
 version: "1"
 description: |
   Agent-safe Git pack. Makes it safe to give your AI coding agent access to
-  git and gh without worrying about remote destruction or uncontrolled commits.
-  Ports and supersedes the rethunk-mcp-nudge.py legacy hook.
+  git without worrying about remote destruction or uncontrolled commits.
+  Destructive GitHub CLI (`gh`) commands are covered by the separate `agent-gh`
+  pack. Ports and supersedes the rethunk-mcp-nudge.py legacy hook.
 
 defaults:
   tier: baseline
@@ -272,12 +273,11 @@ rules:
     match:
       shell_segments:
         - program: git
-        - program: gh
     action: nudge
     priority: 10
     tier: baseline
     additional_context: |
-      You used a raw git/gh shell command. When available, prefer MCP tools:
+      You used a raw git shell command. When available, prefer MCP tools:
       - user-rethunk-git / batch_commit: stage and commit changes
       - user-rethunk-git / git_status: inspect working tree status
       - user-rethunk-github: GitHub operations (PRs, issues, CI)
