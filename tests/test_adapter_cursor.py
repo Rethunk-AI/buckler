@@ -23,14 +23,10 @@ def _load(name: str) -> dict:
 
 # ── Fixture-driven round-trip tests ──────────────────────────────────────────
 
-
-@pytest.mark.parametrize(
-    "fixture_name",
-    [
-        "before_shell_exec_commit.json",
-        "before_shell_exec_add.json",
-    ],
-)
+@pytest.mark.parametrize("fixture_name", [
+    "before_shell_exec_commit.json",
+    "before_shell_exec_add.json",
+])
 def test_fixture_round_trip(fixture_name: str):
     fx = _load(fixture_name)
     cursor_input = fx["cursor_input"]
@@ -62,7 +58,6 @@ def test_fixture_round_trip(fixture_name: str):
 
 
 # ── adapt_input unit tests ────────────────────────────────────────────────────
-
 
 def test_adapt_before_shell_exec():
     raw = {
@@ -106,7 +101,6 @@ def test_adapt_post_tool_use():
 
 
 # ── adapt_output unit tests ───────────────────────────────────────────────────
-
 
 def test_adapt_output_deny():
     policy_output = {
@@ -152,3 +146,78 @@ def test_adapt_output_post_tool_nudge():
     # Post-tool hooks don't use 'permission', they use 'additional_context'
     assert "permission" not in result
     assert result.get("additional_context") == "Use MCP tools instead."
+
+
+# ── Edge cases ────────────────────────────────────────────────────────────────
+
+class TestCursorAdapter:
+    def test_unknown_event_falls_back_to_post_tool_success(self):
+        """An unrecognised hook_event_name defaults to post_tool_success (allow path)."""
+        pi = adapt_input({"hook_event_name": "unknownEvent", "cwd": "/p"})
+        assert pi["trigger"] == "post_tool_success"
+
+    def test_ask_decision_maps_to_cursor_ask(self):
+        result = adapt_output(
+            {
+                "policy_io_version": "1",
+                "decision": "ask",
+                "user_message": "Confirm?",
+                "agent_message": "Please confirm.",
+                "additional_context": None,
+                "updated_tool_input": None,
+            },
+            {"hook_event_name": "beforeShellExecution"},
+        )
+        assert result == {"permission": "ask", "message": "Confirm?",
+                          "agent_message": "Please confirm."}
+
+    def test_nudge_on_pre_hook_is_allow_with_messages(self):
+        """Nudge on a pre-hook = allow + advisory messages (not a block)."""
+        result = adapt_output(
+            {
+                "policy_io_version": "1",
+                "decision": "nudge",
+                "user_message": "Consider MCP.",
+                "agent_message": "Use batch_commit.",
+                "additional_context": None,
+                "updated_tool_input": None,
+            },
+            {"hook_event_name": "preToolUse"},
+        )
+        assert result["permission"] == "allow"
+        assert result["message"] == "Consider MCP."
+        assert result["agent_message"] == "Use batch_commit."
+
+    def test_allow_on_post_hook_returns_empty(self):
+        """A plain allow on a post-hook emits an empty response (no-op)."""
+        result = adapt_output(
+            {
+                "policy_io_version": "1",
+                "decision": "allow",
+                "user_message": None,
+                "agent_message": None,
+                "additional_context": None,
+                "updated_tool_input": None,
+            },
+            {"hook_event_name": "postToolUse"},
+        )
+        assert result == {}
+
+    def test_pre_tool_non_shell_has_no_shell_field(self):
+        """A preToolUse event for a non-Shell tool produces trigger=pre_shell_tool, shell=None."""
+        pi = adapt_input({
+            "hook_event_name": "preToolUse",
+            "tool_name": "Edit",
+            "tool_input": {"path": "/file.py"},
+            "cwd": "/p",
+            "workspace_root": "/p",
+        })
+        assert pi["trigger"] == "pre_shell_tool"
+        assert pi["tool"]["name"] == "Edit"
+        assert pi["shell"] is None
+
+    def test_workspace_root_from_cwd(self):
+        """cwd is used as workspace_root when workspace_root key is absent."""
+        pi = adapt_input({"hook_event_name": "beforeShellExecution",
+                          "shell_command": "ls", "cwd": "/myproject"})
+        assert pi["session"]["workspace_roots"] == ["/myproject"]

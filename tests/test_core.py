@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -18,15 +19,11 @@ def _load(name: str) -> dict:
 
 # ── Fixture-driven golden tests ──────────────────────────────────────────────
 
-
-@pytest.mark.parametrize(
-    "fixture_name",
-    [
-        "allow_basic.json",
-        "deny_git_commit.json",
-        "warn_git_add.json",
-    ],
-)
+@pytest.mark.parametrize("fixture_name", [
+    "allow_basic.json",
+    "deny_git_commit.json",
+    "warn_git_add.json",
+])
 def test_golden_fixture(fixture_name: str):
     fx = _load(fixture_name)
     result = evaluate(fx["input"])
@@ -39,36 +36,211 @@ def test_golden_fixture(fixture_name: str):
 
 # ── Segment parser unit tests ────────────────────────────────────────────────
 
-
-@pytest.mark.parametrize(
-    "command,expected_count",
-    [
-        ("git commit -m 'hello'", 1),
-        ("git add . && git commit -m 'x'", 2),
-        ("echo a; echo b; echo c", 3),
-        ("git push || echo failed", 2),
-        ("echo 'hello && world'", 1),  # quoted boundary
-    ],
-)
+@pytest.mark.parametrize("command,expected_count", [
+    ("git commit -m 'hello'", 1),
+    ("git add . && git commit -m 'x'", 2),
+    ("echo a; echo b; echo c", 3),
+    ("git push || echo failed", 2),
+    ("echo 'hello && world'", 1),  # quoted boundary
+])
 def test_segment_command(command: str, expected_count: int):
     segments = _segment_command(command)
     assert len(segments) == expected_count, f"segments={segments!r}"
 
 
-@pytest.mark.parametrize(
-    "segment,expected_program,expected_sub",
-    [
-        ("git commit -m 'x'", "git", "commit"),
-        ("git push --force origin main", "git", "push"),
-        ("git -C /some/path commit -m 'x'", "git", "commit"),
-        ("git remote remove origin", "git", "remote remove"),
-        ("git remote rm upstream", "git", "remote rm"),
-        ("git add -A", "git", "add"),
-        ("ls -la /tmp", "ls", "/tmp"),
-        ("/usr/bin/git commit -m 'x'", "git", "commit"),
-    ],
-)
+@pytest.mark.parametrize("segment,expected_program,expected_sub", [
+    ("git commit -m 'x'", "git", "commit"),
+    ("git push --force origin main", "git", "push"),
+    ("git -C /some/path commit -m 'x'", "git", "commit"),
+    ("git remote remove origin", "git", "remote remove"),
+    ("git remote rm upstream", "git", "remote rm"),
+    ("git add -A", "git", "add"),
+    ("ls -la /tmp", "ls", "/tmp"),
+    ("/usr/bin/git commit -m 'x'", "git", "commit"),
+])
 def test_parse_segment(segment: str, expected_program: str, expected_sub: str | None):
     program, sub, _flags = _parse_segment(segment)
     assert program == expected_program
     assert sub == expected_sub
+
+
+# ── Edge cases & branch coverage ─────────────────────────────────────────────
+
+class TestCoreEdgeCases:
+    def test_segment_double_quoted_boundary(self):
+        """&& inside double quotes must NOT split the command into two segments."""
+        assert len(_segment_command('echo "hello && world"')) == 1
+
+    def test_parse_segment_shlex_error(self):
+        """Unclosed quote causes shlex.ValueError → graceful (None, None, [])."""
+        from buckler.core import _parse_segment
+        assert _parse_segment("git commit -m 'unclosed") == (None, None, [])
+
+    def test_parse_segment_empty(self):
+        from buckler.core import _parse_segment
+        assert _parse_segment("") == (None, None, [])
+
+    def test_parse_segment_git_global_options_skipped(self):
+        """Git global flags (-C, --bare) before the subcommand are transparent."""
+        program, sub, _flags = _parse_segment("git --bare commit -m 'x'")
+        assert (program, sub) == ("git", "commit")
+
+        program, sub, _flags = _parse_segment("git -C /path commit -m 'x'")
+        assert (program, sub) == ("git", "commit")
+
+    def test_parse_segment_double_dash_stops_subcommand_search(self):
+        """-- terminates global option parsing; the next token is not a subcommand."""
+        program, sub, _flags = _parse_segment("git -- commit")
+        assert program == "git"
+        assert sub is None
+
+    def test_push_has_delete_refspec_double_colon_not_matched(self):
+        """::something must NOT be treated as an implicit delete refspec."""
+        from buckler.core import _push_has_delete_refspec
+        assert _push_has_delete_refspec("git push origin ::refs") is False
+
+    def test_push_has_delete_refspec_bad_quote_returns_false(self):
+        """Unclosed quote in push command → shlex error → safe False, not an exception."""
+        from buckler.core import _push_has_delete_refspec
+        assert _push_has_delete_refspec("git push 'unclosed") is False
+
+    def test_evaluate_allow_no_matching_rule(self):
+        """Commands matching no rule are allowed (default-allow policy)."""
+        result = evaluate({
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "make test", "cwd": "/p"},
+            "env": {},
+        })
+        assert result["decision"] == "allow"
+        assert result["user_message"] is None
+
+    def test_evaluate_bypass_env_overrides_deny(self):
+        """RETHUNK_ALLOW_SHELL=1 overrides even a deny rule."""
+        result = evaluate({
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git commit -m 'x'", "cwd": "/p"},
+            "env": {"RETHUNK_ALLOW_SHELL": "1"},
+        })
+        assert result["decision"] == "allow"
+
+    def test_evaluate_refspec_delete_detected(self):
+        """git push with :branch implicit-delete refspec is denied end-to-end."""
+        result = evaluate({
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git push origin :my-branch", "cwd": "/p"},
+            "env": {},
+        })
+        assert result["decision"] == "deny"
+
+    def test_match_shell_segments_no_constraint_always_true(self):
+        """A match_cfg with no shell_segments key immediately returns True."""
+        from buckler.core import _match_shell_segments
+        assert _match_shell_segments({}, "git commit -m 'x'") is True
+        assert _match_shell_segments({"env": {"X": "y"}}, "make test") is True
+
+    def test_malformed_segment_skipped_in_pipeline(self):
+        """A malformed segment in a pipeline is silently skipped; evaluation continues."""
+        from buckler.core import _match_shell_segments
+        result = _match_shell_segments(
+            {"shell_segments": [{"program": "git"}]},
+            "echo hello && 'unclosed",
+        )
+        assert result is False
+
+
+class TestCoreRemainingBranches:
+    def test_match_tool_name_specified_and_matches(self):
+        from buckler.core import _match_tool_name
+        assert _match_tool_name({"tool_name": "Shell"}, "Shell") is True
+
+    def test_match_tool_name_specified_no_match(self):
+        from buckler.core import _match_tool_name
+        assert _match_tool_name({"tool_name": "Shell"}, "Edit") is False
+
+    def test_matches_shell_segments_empty_command(self):
+        """When shell_segments in match but command is empty, rule does not fire."""
+        from buckler.core import _matches
+        rule = {
+            "id": "r", "pack": "p", "source": "s",
+            "trigger": ["pre_shell_exec"],
+            "match": {"shell_segments": [{"program": "git"}]},
+            "action": "deny", "priority": 100, "tier": "baseline",
+            "user_message": None, "agent_message": None, "additional_context": None,
+            "enabled": True,
+        }
+        inp = {"policy_io_version": "1", "trigger": "pre_shell_exec",
+               "shell": {"command": ""}, "tool": None, "env": {}}
+        assert _matches(rule, inp) is False
+
+    def test_action_priority_unknown(self):
+        from buckler.core import _action_priority
+        assert _action_priority("unknown_action") == 0
+
+    def test_evaluate_rule_priority_tie_higher_severity_wins(self):
+        """When two rules tie on priority, higher-severity action wins."""
+        inp = {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git add ."},
+            "env": {},
+        }
+        result = evaluate(inp)
+        assert result["decision"] == "nudge"
+
+    def test_match_shell_segments_continue_on_none_program(self):
+        """Segments that parse to (None, ...) are skipped without error."""
+        from buckler.core import _match_shell_segments
+        result = _match_shell_segments(
+            {"shell_segments": [{"program": "git", "subcommand": "commit"}]},
+            "git commit && 'unclosed",
+        )
+        assert result is True
+
+    def test_evaluate_refspec_delete_spec_no_match(self):
+        """A rule with refspec_delete:true but no : refspec → not triggered."""
+        inp = {
+            "policy_io_version": "1",
+            "trigger": "pre_shell_exec",
+            "shell": {"command": "git push origin main"},
+            "env": {},
+        }
+        assert evaluate(inp)["decision"] == "allow"
+
+    def test_match_segments_none_program_continue_line(self):
+        """continue fires when a trailing segment has program=None."""
+        from buckler.core import _match_shell_segments
+        result = _match_shell_segments(
+            {"shell_segments": [{"program": "git"}]},
+            "echo hello && 'unclosed",
+        )
+        assert result is False
+
+    def test_evaluate_priority_tie_higher_severity_wins(self, tmp_path: Path):
+        """Two rules at same priority: higher-severity action wins."""
+        from buckler import pack_loader
+        pack_yaml = tmp_path / "tie.yaml"
+        pack_yaml.write_text(
+            "pack: tie-test\nversion: '1'\nrules:\n"
+            "  - id: r-allow\n    trigger: pre_shell_exec\n    action: allow\n"
+            "    priority: 50\n    match:\n      shell_segments:\n        - program: ls\n"
+            "    user_message: null\n    agent_message: null\n\n"
+            "  - id: r-ask\n    trigger: pre_shell_exec\n    action: ask\n"
+            "    priority: 50\n    match:\n      shell_segments:\n        - program: ls\n"
+            "    user_message: 'Confirm?'\n    agent_message: null\n"
+        )
+        with mock.patch("buckler.pack_loader.paths.packs_dir", return_value=tmp_path), \
+             mock.patch("buckler.pack_loader.paths.user_rules_dir", return_value=tmp_path / "nope"):
+            rules = pack_loader.load_packs()
+
+        with mock.patch("buckler.core.load_packs", return_value=rules), \
+             mock.patch("buckler.core.load_config", return_value={"core": {"tier": "baseline"}}):
+            result = evaluate({
+                "policy_io_version": "1",
+                "trigger": "pre_shell_exec",
+                "shell": {"command": "ls -la"},
+                "env": {},
+            })
+        assert result["decision"] == "ask"
