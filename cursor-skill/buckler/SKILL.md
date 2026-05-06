@@ -4,7 +4,7 @@ description: >-
   Buckler Agent Gatehouse: install, configure, use, and troubleshoot the
   Buckler hook policy engine. Use when the user mentions Buckler, asks about
   the agent-git pack, wants to install or update Buckler, bypass a hook,
-  add custom rules, or migrate from rethunk-mcp-nudge.py.
+  add custom rules, or troubleshoot hooks.
 ---
 
 # Buckler — Agent Gatehouse Skill
@@ -19,7 +19,6 @@ description: >-
 
 ```bash
 curl -fsSL https://github.com/Rethunk-AI/buckler/releases/latest/download/setup.sh | bash -s install
-bash setup.sh install --purge-legacy   # migrate from rethunk-mcp-nudge.py
 bash setup.sh update
 bash setup.sh uninstall
 bash setup.sh uninstall --purge-config

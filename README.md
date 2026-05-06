@@ -37,4 +37,3 @@ Buckler is a **harness-neutral** policy engine: declarative YAML rules evaluate 
 | Default `agent-git` pack matrix | [docs/agent-git.md](docs/agent-git.md) |
 | Default `agent-gh` pack matrix | [docs/agent-gh.md](docs/agent-gh.md) |
 | Path resolution (XDG, Windows, env overrides) | [docs/paths.md](docs/paths.md) |
-| Migration from `rethunk-mcp-nudge.py` | [docs/migration.md](docs/migration.md) |

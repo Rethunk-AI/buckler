@@ -79,14 +79,6 @@ bash setup.sh uninstall --purge-config
 
 Also removes configuration and user rules.
 
-### Migrate from `rethunk-mcp-nudge.py`
-
-```bash
-bash setup.sh install --purge-legacy
-```
-
-This removes the legacy `rethunk-mcp-nudge.py` hook entries from `~/.cursor/hooks.json`. The `agent-git` pack supersedes all nudge rules from the old script.
-
 ---
 
 ## Packs

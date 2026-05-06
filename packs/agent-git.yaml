@@ -4,7 +4,7 @@ description: |
   Agent-safe Git pack. Makes it safe to give your AI coding agent access to
   git without worrying about remote destruction or uncontrolled commits.
   Destructive GitHub CLI (`gh`) commands are covered by the separate `agent-gh`
-  pack. Ports and supersedes the rethunk-mcp-nudge.py legacy hook.
+  pack.
 
 defaults:
   tier: baseline
