@@ -71,10 +71,14 @@ def adapt_input(raw: dict[str, Any]) -> dict[str, Any]:
             shell = {"command": tool_input.get("command", ""), "cwd": cwd}
 
     workspace_roots: list[str] = []
-    if raw.get("workspace_root"):
-        workspace_roots = [raw["workspace_root"]]
-    elif raw.get("cwd"):
-        workspace_roots = [raw["cwd"]]
+    wr = raw.get("workspace_root")
+    cwd = raw.get("cwd")
+    if wr and cwd and wr != cwd:
+        workspace_roots = [wr, cwd]
+    elif wr:
+        workspace_roots = [wr]
+    elif cwd:
+        workspace_roots = [cwd]
 
     return {
         "policy_io_version": POLICY_IO_VERSION,

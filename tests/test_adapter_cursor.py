@@ -92,6 +92,17 @@ def test_adapt_pre_tool_use_shell():
     assert pi["shell"]["command"] == "git add ."
 
 
+def test_adapt_workspace_roots_includes_both_when_distinct():
+    raw = {
+        "hook_event_name": "beforeShellExecution",
+        "shell_command": "git status",
+        "workspace_root": "/repo",
+        "cwd": "/repo/sub",
+    }
+    pi = adapt_input(raw)
+    assert pi["session"]["workspace_roots"] == ["/repo", "/repo/sub"]
+
+
 def test_adapt_post_tool_use():
     raw = {
         "hook_event_name": "postToolUse",
