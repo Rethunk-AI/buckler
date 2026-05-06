@@ -106,6 +106,8 @@ GitHub Actions runs on push and pull requests:
 
 Python versions declared under `Programming Language :: Python :: …` in `pyproject.toml` are checked against `.github/workflows/ci.yml` by `tests/test_ci_matrix_coherence.py`.
 
+**`greenfield-scrub`:** the repo may still carry descriptive “legacy” wording in contract docs (`policy-io`, architecture notes). A CI gate on `greenfield-scrub --fail-on HIGH` is **not** enabled; maintainers run the scrub ad hoc when cleaning deadwood.
+
 ## Pull request checklist
 
 - [ ] Tests pass (`uv run pytest`).
