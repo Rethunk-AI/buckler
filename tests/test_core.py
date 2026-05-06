@@ -57,6 +57,48 @@ def test_segment_command(command: str, expected_count: int):
     assert len(segments) == expected_count, f"segments={segments!r}"
 
 
+def test_match_shell_segments_skips_empty_shlex_tokens(monkeypatch):
+    """Empty argv from shlex is ignored (defensive; rare in real segments)."""
+    from buckler import core
+
+    real = core.shlex.split
+
+    def split_wrap(s: str):
+        if s == "__empty__":
+            return []
+        return real(s)
+
+    monkeypatch.setattr(core.shlex, "split", split_wrap)
+    cfg = {"shell_segments": [{"program": "git", "subcommand": "status"}]}
+    assert core._match_shell_segments(cfg, "__empty__") is False
+
+
+def test_parse_segment_git_unknown_flag_skipped():
+    """Unknown single-dash tokens before subcommand are skipped (git parser loop)."""
+    program, sub, _f = _parse_segment("git -W commit -m x")
+    assert (program, sub) == ("git", "commit")
+
+
+def test_parse_segment_gh_version_only():
+    program, sub, _f = _parse_segment("gh -v")
+    assert program == "gh"
+    assert sub is None
+
+
+def test_gh_tokens_have_api_delete_negative_cases():
+    from buckler.core import _gh_tokens_have_api_delete
+
+    assert _gh_tokens_have_api_delete(["gh"]) is False
+    assert _gh_tokens_have_api_delete(["git", "api", "-X", "DELETE"]) is False
+    assert _gh_tokens_have_api_delete(["gh", "repo", "view"]) is False
+
+
+def test_parse_gh_subcommand_generic_flag_before_command():
+    from buckler.core import _parse_gh_subcommand
+
+    assert _parse_gh_subcommand(["--help", "repo", "delete", "x"]) == ("repo delete", [])
+
+
 @pytest.mark.parametrize(
     "segment,expected_program,expected_sub",
     [
@@ -68,6 +110,11 @@ def test_segment_command(command: str, expected_count: int):
         ("git add -A", "git", "add"),
         ("ls -la /tmp", "ls", "/tmp"),
         ("/usr/bin/git commit -m 'x'", "git", "commit"),
+        ("gh repo delete my/x", "gh", "repo delete"),
+        ("gh -R o/r repo delete my", "gh", "repo delete"),
+        ("gh pr close 9 --delete-branch", "gh", "pr close"),
+        ("gh api x -X DELETE", "gh", "api"),
+        ("gh release delete-asset t a", "gh", "release delete-asset"),
     ],
 )
 def test_parse_segment(segment: str, expected_program: str, expected_sub: str | None):

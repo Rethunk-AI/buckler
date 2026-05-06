@@ -29,6 +29,9 @@ _GIT_GLOBAL_FLAGS = frozenset(
     ["--bare", "--no-replace-objects", "--no-optional-locks", "--version", "--help", "-p"]
 )
 
+# gh(1) global flags that take a following argument (before the command word).
+_GH_GLOBAL_OPTS_WITH_ARG = frozenset({"-R", "--repo", "-h", "--hostname"})
+
 # Shell segment boundary patterns (unquoted)
 _SEGMENT_BOUNDARY = re.compile(r"\s*(?:&&|\|\||;)\s*")
 
@@ -111,22 +114,59 @@ def _segment_command(command: str) -> list[str]:
     return segments
 
 
-def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
-    """Parse a single shell segment into (program, subcommand, flags).
+def _gh_tokens_have_api_delete(tokens: list[str]) -> bool:
+    """True if a gh argv uses `api` with `-X DELETE` or `--method DELETE` (case-insensitive)."""
+    if not tokens or Path(tokens[0]).name != "gh":
+        return False
+    if "api" not in tokens:
+        return False
+    for i in range(len(tokens) - 1):
+        if tokens[i] in ("-X", "--method") and tokens[i + 1].upper() == "DELETE":
+            return True
+    return False
 
-    Returns (None, None, []) if the segment cannot be parsed.
-    """
-    try:
-        tokens = shlex.split(segment)
-    except ValueError:
-        return None, None, []
-    if not tokens:
-        return None, None, []
 
-    program = tokens[0]
-    # Strip path prefix (e.g. /usr/bin/git → git)
-    program = Path(program).name
+def _parse_gh_subcommand(args: list[str]) -> tuple[str | None, list[str]]:
+    """Parse gh argv (after `gh`) into composite subcommand + flags (for rule matching)."""
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg.startswith("-"):
+            if arg in _GH_GLOBAL_OPTS_WITH_ARG and i + 1 < len(args):
+                i += 2
+                continue
+            i += 1
+            continue
+        cmd = arg
+        rest = args[i + 1 :]
+        flags = [a for a in rest if a.startswith("-")]
+        rest_nf = [a for a in rest if not a.startswith("-")]
+        sub = cmd
+        if cmd == "repo" and rest_nf:
+            head = rest_nf[0]
+            if head in ("delete", "archive"):
+                sub = f"repo {head}"
+        elif cmd == "release" and rest_nf:
+            head = rest_nf[0]
+            if head == "delete":
+                sub = "release delete"
+            elif head == "delete-asset":
+                sub = "release delete-asset"
+        elif cmd == "pr" and rest_nf and rest_nf[0] == "close":
+            sub = "pr close"
+        elif cmd == "secret" and rest_nf and rest_nf[0] == "remove":
+            sub = "secret remove"
+        elif cmd == "ssh-key" and rest_nf and rest_nf[0] == "delete":
+            sub = "ssh-key delete"
+        elif cmd == "gpg-key" and rest_nf and rest_nf[0] == "delete":
+            sub = "gpg-key delete"
+        return sub, flags
+    return None, []
 
+
+def _parse_segment_tokens(tokens: list[str]) -> tuple[str | None, str | None, list[str]]:
+    """Parse shlex tokens for one shell segment into (program, subcommand, flags)."""
+    program = Path(tokens[0]).name
     args = tokens[1:]
     subcommand: str | None = None
     flags: list[str] = []
@@ -155,6 +195,8 @@ def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
             if subcommand == "remote" and rest_non_flags:
                 subcommand = f"remote {rest_non_flags[0]}"
             break
+    elif program == "gh":
+        subcommand, flags = _parse_gh_subcommand(args)
     else:
         # Generic: first non-flag arg is the subcommand (or None)
         for arg in args:
@@ -164,6 +206,20 @@ def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
         flags = [a for a in args if a.startswith("-")]
 
     return program, subcommand, flags
+
+
+def _parse_segment(segment: str) -> tuple[str | None, str | None, list[str]]:
+    """Parse a single shell segment into (program, subcommand, flags).
+
+    Returns (None, None, []) if the segment cannot be parsed.
+    """
+    try:
+        tokens = shlex.split(segment)
+    except ValueError:
+        return None, None, []
+    if not tokens:
+        return None, None, []
+    return _parse_segment_tokens(tokens)
 
 
 def _flags_match(
@@ -193,9 +249,13 @@ def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
 
     segments = _segment_command(command)
     for segment in segments:
-        program, subcommand, flags = _parse_segment(segment)
-        if program is None:
+        try:
+            seg_toks = shlex.split(segment)
+        except ValueError:
             continue
+        if not seg_toks:
+            continue
+        program, subcommand, flags = _parse_segment_tokens(seg_toks)
         for spec in segment_specs:
             spec_program = spec.get("program")
             spec_sub = spec.get("subcommand")
@@ -210,6 +270,8 @@ def _match_shell_segments(match_cfg: dict[str, Any], command: str) -> bool:
             if not _flags_match(spec_flags_any, spec_flags_all, flags):
                 continue
             if spec_refspec_delete and not _push_has_delete_refspec(segment):
+                continue
+            if spec.get("gh_api_delete") and not _gh_tokens_have_api_delete(seg_toks):
                 continue
             return True
     return False
