@@ -46,6 +46,9 @@ packages = ["src/buckler"]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers"]
 
+[tool.coverage.run]
+omit = ["src/buckler/__main__.py"]
+
 [tool.ruff]
 src = ["src"]
 target-version = "py311"

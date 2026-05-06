@@ -43,7 +43,7 @@ def _write_json_to(dest: str | None, data: dict[str, Any]) -> None:
         Path(dest).write_text(out + "\n")
 
 
-def _run_cursor_driver(args: argparse.Namespace) -> None:
+def _run_cursor_driver(args: argparse.Namespace) -> None:  # noqa: ARG001
     raw = _load_json_from(None)
     policy_input = cursor_adapter.adapt_input(raw)
 
@@ -83,16 +83,10 @@ def main() -> None:
         "evaluate",
         help="Evaluate a PolicyInput JSON and write PolicyOutput (harness-neutral)",
     )
-    eval_p.add_argument(
-        "--input", "-i", default=None, metavar="FILE", help="PolicyInput JSON file (default: stdin)"
-    )
-    eval_p.add_argument(
-        "--output",
-        "-o",
-        default=None,
-        metavar="FILE",
-        help="PolicyOutput JSON file (default: stdout)",
-    )
+    eval_p.add_argument("--input", "-i", default=None, metavar="FILE",
+                        help="PolicyInput JSON file (default: stdin)")
+    eval_p.add_argument("--output", "-o", default=None, metavar="FILE",
+                        help="PolicyOutput JSON file (default: stdout)")
 
     args = parser.parse_args()
 
@@ -107,5 +101,5 @@ def main() -> None:
         sys.exit(1)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__":  # pragma: no cover
+    main()  # pragma: no cover
