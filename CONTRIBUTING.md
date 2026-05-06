@@ -79,6 +79,13 @@ uv run ruff check src/ tests/
 uv run ruff format --check src/ tests/
 ```
 
+Coverage is enforced at **100%** (`pytest` is invoked with `--cov-fail-under=100` in CI and local `uv run pytest` via `pyproject.toml`). If you add a module or branch that is hard to exercise, use `# pragma: no cover` **only** for:
+
+- `if __name__ == "__main__":` blocks, and
+- platform- or environment-specific branches that are covered elsewhere in the matrix.
+
+Do not use `pragma: no cover` to hide logic that should have a test.
+
 ## Adding a new pack
 
 1. Create `packs/<name>.yaml` following [docs/rule-schema.md](docs/rule-schema.md).

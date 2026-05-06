@@ -171,6 +171,8 @@ audit_log = false
 
 **Append-only contract.** Buckler only appends to the audit file (default `~/.local/state/buckler/audit.log` when `audit_log = true` in `config.toml`). It does not rotate, truncate, or compress the file. **Rotation and retention are operator-owned** for v1: Buckler is a local tool and does not ship a log daemon.
 
+**Concurrency.** Buckler opens the log in append mode and writes one line per `evaluate()` call without file locking. Today Cursor invokes hooks serially per session; parallel harness processes writing the same file could interleave lines. Treat the log as best-effort under concurrency until a future spec adds cross-platform locking.
+
 **Rotation (Linux).** Use your platform scheduler with `logrotate(8)`. Example `/etc/logrotate.d/buckler` fragment (adjust user and path):
 
 ```
