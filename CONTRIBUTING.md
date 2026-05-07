@@ -77,6 +77,9 @@ uv run pytest tests/test_pack_loader.py
 # Lint
 uv run ruff check src/ tests/
 uv run ruff format --check src/ tests/
+
+# Type check (matches CI / release)
+uv run mypy src/buckler/
 ```
 
 Coverage is enforced at **100%** (`pytest` is invoked with `--cov-fail-under=100` in CI and local `uv run pytest` via `pyproject.toml`). If you add a module or branch that is hard to exercise, use `# pragma: no cover` **only** for:

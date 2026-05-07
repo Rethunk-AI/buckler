@@ -52,7 +52,7 @@ CI doesn't catch this because every GitHub Actions runner uses space-free paths.
 | Q | Proposal | Status |
 |---|----------|--------|
 | Q1 | Windows quoting model: Buckler targets **Git Bash** on Windows. Proposal: use POSIX **`shlex.quote`** for the interpreter path on **all** platforms so the `hooks.json` `command` string parses under bash / Git Bash. | **Ratified 051200ZMAY26** — **POSIX `shlex.quote` everywhere** |
-| Q2 | Should the `-m buckler --driver cursor` portion also be quoted (defensive), or left bare? Proposal: **bare** — these are fixed tokens with no whitespace, and quoting them adds noise that humans editing `hooks.json` will trip on. | **Ratified 051200ZMAY26** — **bare** |
+| Q2 | Should the `-m buckler --driver cursor` portion also be quoted, or left bare? Proposal: **bare** — these are fixed tokens with no whitespace, and quoting them adds noise that humans editing `hooks.json` will trip on. | **Ratified 051200ZMAY26** — **bare** |
 | Q3 | When `venv_python` is `None` and we fall back to `sys.executable`, apply the same quoting? Proposal: **yes, unconditionally**. The fallback path also encounters spaces. | **Ratified 051200ZMAY26** — **yes** |
 | Q4 | If a user's path contains a literal newline (rare but legal on Unix), refuse to write `hooks.json` rather than try to escape — `\n` in a `hooks.json` command field is broken regardless. Proposal: **refuse with a clear error message**. | **Ratified 051200ZMAY26** — **refuse** (also **CR**); `ValueError` |
 
