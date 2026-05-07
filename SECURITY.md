@@ -8,7 +8,7 @@ Buckler protects against **unintended agentic shell actions**. Its threat model 
 |--------|-----------|
 | Agent runs destructive `gh` commands (`repo delete`, `api` DELETE, …) | `agent-gh` pack denies baseline destructive subcommands |
 | Agent force-pushes or deletes remote branches | Deny rules on `--force`, `-f`, `--delete`, `--mirror`, `:branch` push |
-| Agent removes or rewrites a remote | Deny rules on `git remote remove`, configurable on `set-url` |
+| Agent removes or rewrites a remote | Deny rules on `git remote remove`; `remote set-url` denied in strict tier |
 | Agent bypasses the hook (shell escape) | `failClosed: true` on critical hooks; shell segmentation + expansion in `buckler.core` closes the agent-class bypasses tracked in [Known parser bypasses (status)](#known-parser-bypasses-status). Not a full POSIX `bash` parser — see remaining gaps there. |
 | Tampered release artifact | Cosign keyless verification in `setup.sh` before any extraction |
 | Malicious user rules | Rules run in the same process as Buckler; no sandbox. User rules are trusted. |
@@ -24,7 +24,7 @@ The `agent-git` pack's shell parser is **not** a full POSIX `bash` implementatio
 | Command substitution `$(…)` and backticks | **closed** | same |
 | `bash -c` / `sh -c` / `dash -c` string not recursed | **closed** | same (depth cap 3; excess → deny) |
 | Env prefix / `env` — e.g. `FOO=bar git commit`, `env … git commit` | **closed** | same |
-| ANSI-C `$'…'`, here-docs, here-strings | open | Future work (see spec out-of-scope); file an issue if exploitable in harness |
+| ANSI-C `$'…'`, here-docs, here-strings | open | Future work (tracked in [specs/done/parser-bypass-hardening/spec.md](specs/done/parser-bypass-hardening/spec.md) out-of-scope); file an issue if exploitable in harness |
 
 **Remaining posture:** expansion or parse failure on nested commands → **deny** (fail-closed), except `RETHUNK_ALLOW_SHELL=1` env-only bypass still applies.
 

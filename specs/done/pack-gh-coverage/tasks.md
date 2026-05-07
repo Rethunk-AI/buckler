@@ -18,4 +18,4 @@ Status: DONE 051400ZMAY26
 
 ## P2
 
-- [ ] Optional: cross-link `cursor-skill/buckler/SKILL.md` to `docs/agent-gh.md`.
+- [x] Optional: cross-link `cursor-skill/buckler/SKILL.md` to `docs/agent-gh.md`.

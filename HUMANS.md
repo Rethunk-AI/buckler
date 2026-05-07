@@ -238,3 +238,5 @@ echo '{"policy_io_version":"1","trigger":"pre_shell_exec","shell":{"command":"gi
 ```
 
 See [docs/contracts/policy-io.md](docs/contracts/policy-io.md) for the full input/output schema.
+
+> For a richer troubleshooting runbook (hook not firing, unexpected allow/deny, audit log problems, Windows quoting) see [docs/troubleshooting.md](docs/troubleshooting.md).

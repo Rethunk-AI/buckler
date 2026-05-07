@@ -16,8 +16,8 @@ Status: DONE 060500ZMAY26 — SECURITY known-parser bypasses table + threat cros
 
 ## P1
 
-- [ ] Second-pass consistency read with `SECURITY.md` threat table wording.
+- [x] Second-pass consistency read with `SECURITY.md` threat table wording.
 
 ## P2
 
-- [ ] Optional: add troubleshooting link from `HUMANS.md` TOC or related section.
+- [x] Optional: add troubleshooting link from `HUMANS.md` TOC or related section.

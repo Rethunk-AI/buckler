@@ -57,6 +57,7 @@ python -m buckler.hooks status
 | [HUMANS.md](https://github.com/Rethunk-AI/buckler/blob/main/HUMANS.md) | Operator guide (install, packs, bypass, troubleshooting) |
 | [docs/troubleshooting.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/troubleshooting.md) | Hooks not firing, unexpected allow/deny, audit log, Windows quoting |
 | [docs/agent-git.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/agent-git.md) | Full Git pack matrix |
+| [docs/agent-gh.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/agent-gh.md) | Full GitHub CLI pack matrix |
 | [docs/rule-schema.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/rule-schema.md) | YAML rule authoring reference |
 | [docs/contracts/policy-io.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/contracts/policy-io.md) | PolicyInput/PolicyOutput contract |
 | [docs/adapters/cursor.md](https://github.com/Rethunk-AI/buckler/blob/main/docs/adapters/cursor.md) | Cursor event mapping + hooks.json wiring |
