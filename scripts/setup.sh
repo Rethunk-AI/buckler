@@ -11,7 +11,7 @@ set -euo pipefail
 BUCKLER_REPO="Rethunk-AI/buckler"
 BUCKLER_RELEASE_BASE="https://github.com/${BUCKLER_REPO}/releases"
 BUCKLER_HOOK_PREFIX="buckler:"
-SCRIPT_VERSION="0.1.0"
+SCRIPT_VERSION="0.2.0"
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 _info()  { printf '\033[0;34m[buckler]\033[0m %s\n' "$*"; }

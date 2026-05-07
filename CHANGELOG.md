@@ -4,6 +4,28 @@ All notable changes to Buckler are documented here. The format follows the spiri
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-07
+
+Maintenance release focused on CI/release hardening, Windows portability, and documentation closeout after the 0.1.0 public release.
+
+### Added
+
+- CI now writes pytest-cov tables to the GitHub Step Summary for each OS / Python matrix cell.
+- CI includes a Node runtime smoke job for Node 22 and Node 24, with JavaScript actions opted into the Node 24 runner runtime.
+
+### Changed
+
+- GitHub Actions were refreshed and pinned to full versions (`checkout@v6.0.2`, `setup-uv@v8.1.0`, `setup-node@v6.4.0`, `cosign-installer@v4.1.1`).
+- Release publishing now uses the GitHub CLI instead of a third-party release action, while keeping the same lint, format, type-check, test, tarball, and Cosign signing gates.
+- Dependency floors were refreshed for the current toolchain: PyYAML, jsonschema, pytest, pytest-cov, Ruff, mypy, and Hatchling.
+- Spec and operator docs were closed out for the docs-polish, hooks-cross-platform-quoting, pack-gh-coverage, and code-quality-sweep follow-ups.
+
+### Fixed
+
+- Windows portability coverage now exercises audit-log path handling, XDG-style overrides, and virtualenv path resolution more reliably.
+- Security and operator docs now state the `git remote set-url` strict-tier behavior consistently and link parser-bypass status back to the remediation spec.
+- `.cursor/` is ignored so machine-local MCP configuration is not staged accidentally.
+
 ## [0.1.0] — 2026-05-06
 
 First public release.
@@ -31,4 +53,6 @@ First public release.
 - `load_config()` no longer catches bare `Exception`; only expected I/O and TOML errors fall back to defaults.
 - Removed unused `tomllib` conditional dependency (Python 3.11+ only).
 
+[Unreleased]: https://github.com/Rethunk-AI/buckler/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Rethunk-AI/buckler/compare/6228c6f...v0.2.0
 [0.1.0]: https://github.com/Rethunk-AI/buckler/releases/tag/v0.1.0
