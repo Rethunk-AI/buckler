@@ -19,58 +19,58 @@ jobs:
       # Full Python minor coverage on Linux; macOS/Windows one representative cell (see specs/active/ci-hygiene Q2).
       matrix:
         include:
-          - os: ubuntu-latest
-            python-version: "3.11"
-          - os: ubuntu-latest
-            python-version: "3.12"
-          - os: ubuntu-latest
-            python-version: "3.13"
-          - os: macos-latest
-            python-version: "3.13"
-          - os: windows-latest
-            python-version: "3.13"
+        - os: ubuntu-latest
+          python-version: "3.11"
+        - os: ubuntu-latest
+          python-version: "3.12"
+        - os: ubuntu-latest
+          python-version: "3.13"
+        - os: macos-latest
+          python-version: "3.13"
+        - os: windows-latest
+          python-version: "3.13"
 
     steps:
-      - uses: actions/checkout@v6.0.2
+    - uses: actions/checkout@v6.0.2
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
+    - name: Install uv
+      uses: astral-sh/setup-uv@v8.1.0
+      with:
+        enable-cache: true
 
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+    - name: Set up Python
+      run: uv python install ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: uv sync --extra dev
+    - name: Install dependencies
+      run: uv sync --extra dev
 
-      - name: Lint (ruff)
-        run: uv run ruff check src/ tests/
+    - name: Lint (ruff)
+      run: uv run ruff check src/ tests/
 
-      - name: Format check (ruff)
-        run: uv run ruff format --check src/ tests/
+    - name: Format check (ruff)
+      run: uv run ruff format --check src/ tests/
 
-      - name: Type check (mypy)
-        run: uv run mypy src/buckler/
+    - name: Type check (mypy)
+      run: uv run mypy src/buckler/
 
-      - name: Run tests
-        shell: bash
-        run: |
-          set -o pipefail
-          uv run pytest tests/ -v --tb=short 2>&1 | tee "${RUNNER_TEMP}/pytest-output.txt"
+    - name: Run tests
+      shell: bash
+      run: |
+        set -o pipefail
+        uv run pytest tests/ -v --tb=short 2>&1 | tee "${RUNNER_TEMP}/pytest-output.txt"
 
-      - name: Coverage summary
-        if: always()
-        shell: bash
-        run: |
-          [[ -f "${RUNNER_TEMP}/pytest-output.txt" ]] || exit 0
-          {
-            echo "## Coverage — Python ${{ matrix.python-version }} (${{ matrix.os }})"
-            echo ""
-            echo '```'
-            awk '/^Name /{p=1} p' "${RUNNER_TEMP}/pytest-output.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+    - name: Coverage summary
+      if: always()
+      shell: bash
+      run: |
+        [[ -f "${RUNNER_TEMP}/pytest-output.txt" ]] || exit 0
+        {
+          echo "## Coverage — Python ${{ matrix.python-version }} (${{ matrix.os }})"
+          echo ""
+          echo '```'
+          awk '/^Name /{p=1} p' "${RUNNER_TEMP}/pytest-output.txt"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
 
   node-runtime:
     name: Node ${{ matrix.node-version }} (smoke)
@@ -81,30 +81,30 @@ jobs:
         node-version: ["22", "24"]
 
     steps:
-      - uses: actions/checkout@v6.0.2
+    - uses: actions/checkout@v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
+    - name: Set up Node.js
+      uses: actions/setup-node@v6.4.0
+      with:
+        node-version: ${{ matrix.node-version }}
 
-      - name: Verify Node major
-        run: node -e "const m=process.version.match(/^v(\\d+)/)[1]; if (m !== process.env.EXPECTED) { console.error('want v'+process.env.EXPECTED+'.*, got', process.version); process.exit(1); }"
-        env:
-          EXPECTED: ${{ matrix.node-version }}
+    - name: Verify Node major
+      run: node -e "const m=process.version.match(/^v(\\d+)/)[1]; if (m !== process.env.EXPECTED) { console.error('want v'+process.env.EXPECTED+'.*, got', process.version); process.exit(1); }"
+      env:
+        EXPECTED: ${{ matrix.node-version }}
 
   shellcheck:
     name: Shellcheck setup.sh
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.2
+    - uses: actions/checkout@v6.0.2
 
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
+    - name: Install shellcheck
+      run: sudo apt-get install -y shellcheck
 
-      - name: Check setup.sh syntax (bash -n)
-        run: bash -n scripts/setup.sh
+    - name: Check setup.sh syntax (bash -n)
+      run: bash -n scripts/setup.sh
 
-      - name: Shellcheck
-        run: shellcheck --shell=bash --severity=warning scripts/setup.sh
+    - name: Shellcheck
+      run: shellcheck --shell=bash --severity=warning scripts/setup.sh
