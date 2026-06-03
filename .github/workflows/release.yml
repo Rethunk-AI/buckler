@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+    - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: write      # create GitHub releases + upload assets
@@ -18,95 +18,95 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+    - name: Install uv
+      uses: astral-sh/setup-uv@v8.1.0
 
-      - name: Set up Python
-        run: uv python install
+    - name: Set up Python
+      run: uv python install
 
-      - name: Install dependencies
-        run: uv sync --extra dev
+    - name: Install dependencies
+      run: uv sync --extra dev
 
-      - name: Lint (ruff)
-        run: uv run ruff check src/ tests/
+    - name: Lint (ruff)
+      run: uv run ruff check src/ tests/
 
-      - name: Format check (ruff)
-        run: uv run ruff format --check src/ tests/
+    - name: Format check (ruff)
+      run: uv run ruff format --check src/ tests/
 
-      - name: Type check (mypy)
-        run: uv run mypy src/buckler/
+    - name: Type check (mypy)
+      run: uv run mypy src/buckler/
 
-      - name: Run tests (gate)
-        run: uv run pytest tests/ -q
+    - name: Run tests (gate)
+      run: uv run pytest tests/ -q
 
-      - name: Extract version
-        id: version
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+    - name: Extract version
+      id: version
+      run: |
+        TAG="${GITHUB_REF_NAME}"
+        VERSION="${TAG#v}"
+        echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Build release tarball
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          TARBALL="buckler-${VERSION}.tar.gz"
-          # Include source, packs, scripts, docs, and lock file (not .venv)
-          tar -czf "$TARBALL" \
-            --exclude='.venv' \
-            --exclude='__pycache__' \
-            --exclude='*.pyc' \
-            --exclude='.pytest_cache' \
-            --exclude='.ruff_cache' \
-            --transform "s|^|buckler-${VERSION}/|" \
-            src/ packs/ scripts/ docs/ \
-            pyproject.toml uv.lock LICENSE README.md HUMANS.md AGENTS.md \
-            CONTRIBUTING.md SECURITY.md ARCHITECTURE.md CHANGELOG.md
-          echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
+    - name: Build release tarball
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        TARBALL="buckler-${VERSION}.tar.gz"
+        # Include source, packs, scripts, docs, and lock file (not .venv)
+        tar -czf "$TARBALL" \
+          --exclude='.venv' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='.pytest_cache' \
+          --exclude='.ruff_cache' \
+          --transform "s|^|buckler-${VERSION}/|" \
+          src/ packs/ scripts/ docs/ \
+          pyproject.toml uv.lock LICENSE README.md HUMANS.md AGENTS.md \
+          CONTRIBUTING.md SECURITY.md ARCHITECTURE.md CHANGELOG.md
+        echo "TARBALL=${TARBALL}" >> "$GITHUB_ENV"
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v4.1.2
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v4.1.2
 
-      - name: Sign tarball (Cosign keyless)
-        run: |
-          cosign sign-blob "$TARBALL" \
-            --bundle "${TARBALL}.bundle" \
-            --yes
+    - name: Sign tarball (Cosign keyless)
+      run: |
+        cosign sign-blob "$TARBALL" \
+          --bundle "${TARBALL}.bundle" \
+          --yes
 
       # Org policy: no third-party release actions — use GitHub CLI (bundled on hosted runners).
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="${{ steps.version.outputs.tag }}"
-          VERSION="${{ steps.version.outputs.version }}"
-          cat > release-notes.md <<EOF
-          ## Buckler ${VERSION}
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        VERSION="${{ steps.version.outputs.version }}"
+        cat > release-notes.md <<EOF
+        ## Buckler ${VERSION}
 
-          ### Install
+        ### Install
 
-          \`\`\`bash
-          curl -fsSL https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/setup.sh | bash -s install
-          \`\`\`
+        \`\`\`bash
+        curl -fsSL https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/setup.sh | bash -s install
+        \`\`\`
 
-          ### Verify before run
+        ### Verify before run
 
-          \`\`\`bash
-          curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz
-          curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz.bundle
-          cosign verify-blob buckler-${VERSION}.tar.gz \\
-            --bundle buckler-${VERSION}.tar.gz.bundle \\
-            --certificate-identity-regexp "https://github.com/Rethunk-AI/buckler/.github/workflows/release.yml" \\
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-          bash setup.sh install
-          \`\`\`
-          EOF
-          gh release create "${TAG}" \
-            --title "Buckler ${VERSION}" \
-            --notes-file release-notes.md \
-            --verify-tag \
-            "${TARBALL}" "${TARBALL}.bundle" scripts/setup.sh
+        \`\`\`bash
+        curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz
+        curl -fsSLO https://github.com/Rethunk-AI/buckler/releases/download/${TAG}/buckler-${VERSION}.tar.gz.bundle
+        cosign verify-blob buckler-${VERSION}.tar.gz \\
+          --bundle buckler-${VERSION}.tar.gz.bundle \\
+          --certificate-identity-regexp "https://github.com/Rethunk-AI/buckler/.github/workflows/release.yml" \\
+          --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+        bash setup.sh install
+        \`\`\`
+        EOF
+        gh release create "${TAG}" \
+          --title "Buckler ${VERSION}" \
+          --notes-file release-notes.md \
+          --verify-tag \
+          "${TARBALL}" "${TARBALL}.bundle" scripts/setup.sh
