@@ -78,7 +78,7 @@ Adapter                     Core
   "policy_io_version": "1",
   "decision": "deny",
   "user_message": "git commit is blocked by the agent-git pack.",
-  "agent_message": "BLOCKED: Use user-rethunk-git batch_commit MCP tool to commit changes instead of git commit.",
+  "agent_message": "BLOCKED: Use plugin-rethunk-git-rethunk-git batch_commit MCP tool to commit changes instead of git commit.",
   "additional_context": null,
   "updated_tool_input": null
 }

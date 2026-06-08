@@ -21,7 +21,7 @@ Buckler contributors and agents follow the same **`/good-version-control`** rule
 
 | Rule | Requirement |
 |------|-------------|
-| **Staging / commits** | Use `user-rethunk-git` / `batch_commit` (MCP) in Cursor sessions. Never use raw shell `git commit` / `git add` when MCP is available. |
+| **Staging / commits** | Use `plugin-rethunk-git-rethunk-git` / `batch_commit` (MCP) in Cursor sessions. Never use raw shell `git commit` / `git add` when MCP is available. |
 | **If MCP unavailable** | Stop. Surface the error. Do not silently fall back to shell git unless the user explicitly opts in. |
 | **Cadence** | Commit in small thematic batches after each coherent unit. Do not defer everything to one "completion" commit. |
 | **Paths per commit** | ≤ ~7 paths; split by theme, not file count. |

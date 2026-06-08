@@ -99,8 +99,8 @@ Env conditions are AND-ed. Use `env: { RETHUNK_ALLOW_SHELL: "1" }` to match bypa
         subcommand: commit
   action: deny
   priority: 100
-  user_message: "git commit is blocked. Use the user-rethunk-git MCP (batch_commit) instead."
-  agent_message: "BLOCKED: {command}\n\nUse user-rethunk-git batch_commit MCP tool to commit changes. Do not attempt git commit again."
+  user_message: "git commit is blocked. Use the plugin-rethunk-git-rethunk-git MCP (batch_commit) instead."
+  agent_message: "BLOCKED: {command}\n\nUse plugin-rethunk-git-rethunk-git batch_commit MCP tool to commit changes. Do not attempt git commit again."
 ```
 
 ## Example: warn `git add`
@@ -114,7 +114,7 @@ Env conditions are AND-ed. Use `env: { RETHUNK_ALLOW_SHELL: "1" }` to match bypa
         subcommand: add
   action: nudge
   priority: 50
-  additional_context: "git add detected. Prefer user-rethunk-git MCP (batch_commit) which stages and commits atomically. git add is allowed but you should confirm with the user before proceeding."
+  additional_context: "git add detected. Prefer plugin-rethunk-git-rethunk-git MCP (batch_commit) which stages and commits atomically. git add is allowed but you should confirm with the user before proceeding."
 ```
 
 ## Example: bypass allowlist
