@@ -4,6 +4,10 @@ All notable changes to Buckler are documented here. The format follows the spiri
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-06-11
+
+Re-release of 0.2.1 with signed release artifacts. No code changes. The 0.2.1 release slot was consumed by an asset-less release that could not be replaced under the repository's immutable-release policy.
+
 ## [0.2.1] — 2026-06-11
 
 Maintenance release: CI workflow hardening, dependency refresh, and docs update.
@@ -64,7 +68,8 @@ First public release.
 - `load_config()` no longer catches bare `Exception`; only expected I/O and TOML errors fall back to defaults.
 - Removed unused `tomllib` conditional dependency (Python 3.11+ only).
 
-[Unreleased]: https://github.com/Rethunk-AI/buckler/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Rethunk-AI/buckler/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/Rethunk-AI/buckler/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Rethunk-AI/buckler/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Rethunk-AI/buckler/compare/6228c6f...v0.2.0
 [0.1.0]: https://github.com/Rethunk-AI/buckler/releases/tag/v0.1.0
